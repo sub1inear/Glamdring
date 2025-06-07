@@ -65,8 +65,8 @@ void chess_t::print_bitboard(uint64_t bitboard) {
         std::cout << '\n';
     }
 }
-uint64_t chess_t::magic_bitboard_key(uint64_t mask, uint64_t blockers, uint64_t magic, int shift) {
-    return (mask & blockers) * magic >> shift;
+uint64_t chess_t::magic_bitboard_key(uint64_t blockers, uint64_t magic, int shift) {
+    return blockers * magic >> shift;
 }
 
 int chess_t::test() {

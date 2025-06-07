@@ -6,16 +6,18 @@
 #include <cctype>
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
+#include <immintrin.h>
 
 class chess_t {
 public:
     typedef int32_t square_t;
 
-    enum color_t : uint32_t {
+    enum color_t : uint8_t {
         WHITE,
         BLACK
     };
-    enum piece_t : uint32_t {
+    enum piece_t : uint8_t {
         PAWN,
         KNIGHT,
         BISHOP,
@@ -24,7 +26,7 @@ public:
         KING,
         CLEAR
     };
-    enum castling_side_t : uint32_t {
+    enum castling_side_t : uint8_t {
         KINGSIDE,
         QUEENSIDE
     };
@@ -104,16 +106,18 @@ public:
         void load_fen(const char *fen);
     } board;
     
+    // precomp.cpp
+    void gen_magics();
+
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
     
-    void print_bitboard(uint64_t bitboard);
-    uint64_t magic_bitboard_key(uint64_t mask, uint64_t blockers, uint64_t magic, int shift);
+    static void print_bitboard(uint64_t bitboard);
+    static uint64_t magic_bitboard_key(uint64_t blockers, uint64_t magic, int shift);
     
-    void gen_magics();  
     int test();
-
+    
     
 
 };
