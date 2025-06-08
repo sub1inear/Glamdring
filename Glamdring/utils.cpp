@@ -1,5 +1,9 @@
 #include "chess.h"
 
+void chess_t::magic_t::print() {
+    std::cout << "{ " << idx << ", " << magic << ", " << mask << ", " << shift << " }, ";
+}
+
 chess_t::piece_color_t::piece_color_t(char c) {
     switch (tolower(c)) {
     case 'p':
@@ -58,15 +62,12 @@ chess_t::square_t chess_t::file_rank_to_square(square_t file, square_t rank) {
 }
  
 void chess_t::print_bitboard(uint64_t bitboard) {
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
+    for (uint32_t i = 0; i < 8; i++) {
+        for (uint32_t j = 0; j < 8; j++) {
             std::cout << ((bitboard >> (i * 8 + j)) & 0x1) << ' ';
         }
         std::cout << '\n';
     }
-}
-uint64_t chess_t::magic_bitboard_key(uint64_t blockers, uint64_t magic, int shift) {
-    return blockers * magic >> shift;
 }
 
 int chess_t::test() {

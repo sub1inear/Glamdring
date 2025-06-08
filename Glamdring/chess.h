@@ -3,11 +3,13 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <chrono>
 #include <cctype>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
+#include "data.h"
 
 class chess_t {
 public:
@@ -101,7 +103,7 @@ public:
         void set_en_passant(square_t square) {
             en_passant = square;
         }
-        void print_board();
+        void print();
         void clear();
         void load_fen(const char *fen);
     } board;
@@ -110,14 +112,18 @@ public:
     void gen_magics();
 
     // utils.cpp
+    class magic_t {
+    public:
+        int idx;
+        uint64_t magic;
+        uint64_t mask;
+        int shift;
+        void print();
+    };
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
     
     static void print_bitboard(uint64_t bitboard);
-    static uint64_t magic_bitboard_key(uint64_t blockers, uint64_t magic, int shift);
     
     int test();
-    
-    
-
 };

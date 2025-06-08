@@ -1,11 +1,11 @@
 #include "chess.h"
 
-void chess_t::board_t::print_board() {
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            std::cout << (char)get_piece(i * 8 + j) << ' ';
+void chess_t::board_t::print() {
+    for (square_t square = 0; square < 64; square++) {
+        std::cout << (char)get_piece(square) << ' ';
+        if (square % 8 == 0) {
+            std::cout << "\n";
         }
-        std::cout << "\n";
     }
     std::cout << "Castling:\n";
     static constexpr char castling_names[2][2] = {'K', 'Q', 'k', 'q'};
@@ -34,7 +34,7 @@ void chess_t::board_t::clear() {
 
 void chess_t::board_t::load_fen(const char *fen) {
     clear();
-    int fen_idx = 0;
+    uint32_t fen_idx = 0;
     for (square_t square = 0; square < sizeof(board) / sizeof(board[0]); fen_idx++) {
         char c = fen[fen_idx];
         if (isdigit(c)) {
