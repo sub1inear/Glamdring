@@ -99,16 +99,14 @@ static uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
 }
 static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
     uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-    
-    uint64_t blockers_bits = __popcnt64(mask);
-    uint64_t blockers_size = 1ull << blockers_bits;
+    uint64_t blockers_size = 1ull <<  __popcnt64(mask); // 2 ^ population count of mask
     
     uint64_t best_magic = 0;
-    int best_shift = 0;
+    uint32_t best_shift = 0;
 
     uint64_t precomp_moves[1 << 12];
-    uint64_t moves[1 << 15];
-    uint64_t used[1 << 15] {0};
+    uint64_t moves[1 << 12];
+    uint64_t used[1 << 12] {0};
 
     uint64_t generation = 0;
 
@@ -117,7 +115,7 @@ static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
        precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
     }
     for (uint32_t shift = 64 - 12; shift < 64 - 7; shift++) {
-        for (uint32_t i = 0; i < 1'000'000'000ul; i++) {
+        for (uint32_t i = 0; i < 1'000'000ul; i++) {
             generation++;
 
             bool succeeded = true;
@@ -148,33 +146,56 @@ static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
     }
     return { 0, best_magic, mask, best_shift };
 }
+
+static void print_magics(std::ofstream &fout, chess_t::magic_t *magics, uint32_t &offset, bool rook) {
+    for (chess_t::square_t square = 0; square < 64; square++) {
+        fout << "    ";
+        do {
+            magics[square] = gen_magic(square, rook);
+        } while (magics[square].magic == 0);
+        magics[square].idx = offset;
+        offset += 1u << (64 - magics[square].shift);
+        fout << "{ " << magics[square].idx << ", " << magics[square].magic << ", " << magics[square].mask << ", " << magics[square].shift << " },\n";
+    }
+}
+static void print_magic_move_data(std::ofstream &fout, chess_t::magic_t *magics, bool rook) {
+    uint32_t total = 0;
+    for (chess_t::square_t square = 0; square < 64; square++) {
+        uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
+        uint64_t blockers_size = 1ull << __popcnt64(mask);
+        uint32_t moves_size = 1u << (64 - magics[square].shift);
+        uint64_t moves[1 << 12]; // allocate on heap? 
+        for (uint32_t i = 0; i < blockers_size; i++) {
+            uint64_t blockers = _pdep_u64(i, mask);
+            uint64_t key = blockers * magics[square].magic >> magics[square].shift;
+            uint64_t move = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
+            moves[key] = move;
+        }
+        for (uint32_t i = 0; i < moves_size; i++, total++) {
+            if (total % 8 == 0) {
+                fout << "    ";
+            }
+            fout << moves[i] << ", ";
+            if (total % 8 == 7) {
+                fout << "\n";
+            }
+        }
+    }
+}
 void chess_t::gen_magics() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    std::cout << "constexpr chess_t::magic_t rook_magics = {\n";
-    for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < 4; j++) {
-            magic_t magic;
-            do {
-                magic = gen_magic(i * 4 + j, true);
-            } while (magic.magic == 0);
-            std::cout << "    ";
-            magic.print();
-            std::cout << "\n";
-        }
-    }
-    std::cout << "};\nconstexpr chess_t::magic_t bishop_magics = {\n";
-    for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < 4; j++) {
-            magic_t magic;
-            do {
-                magic = gen_magic(i * 4 + j, true);
-            } while (magic.magic == 0);
-            std::cout << "    ";
-            magic.print();
-            std::cout << "\n";
-        }
-    }
-    std::cout << "};\n";
+    magic_t magics[2][64];
+    uint32_t offset = 0;
+    std::ofstream fout("data.cpp");
+    fout << "#include \"data.h\"\n\nconstexpr chess_t::magic_t bishop_magics[] = {\n";
+    print_magics(fout, (magic_t *)&magics[0], offset, false);
+    fout << "};\nconstexpr chess_t::magic_t rook_magics[] = {\n";
+    print_magics(fout, (magic_t *)&magics[1], offset, true);
+    fout << "};\nconstexpr uint64_t magic_move_data[] = {\n";
+    print_magic_move_data(fout, (magic_t *)&magics[0], false);
+    print_magic_move_data(fout, (magic_t *)&magics[1], true);
+    fout << "};";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+    std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+
 }

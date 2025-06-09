@@ -9,8 +9,8 @@ void chess_t::board_t::print() {
     }
     std::cout << "Castling:\n";
     static constexpr char castling_names[2][2] = {'K', 'Q', 'k', 'q'};
-    for (int color = 0; color < 2; color++) {
-        for (int side = 0; side < 2; side++) {
+    for (uint32_t color = 0; color < 2; color++) {
+        for (uint32_t side = 0; side < 2; side++) {
             if (castling_rights[color][side]) {
                 std::cout << castling_names[color][side];
             }

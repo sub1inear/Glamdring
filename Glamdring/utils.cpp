@@ -1,9 +1,5 @@
 #include "chess.h"
 
-void chess_t::magic_t::print() {
-    std::cout << "{ " << idx << ", " << magic << ", " << mask << ", " << shift << " }, ";
-}
-
 chess_t::piece_color_t::piece_color_t(char c) {
     switch (tolower(c)) {
     case 'p':

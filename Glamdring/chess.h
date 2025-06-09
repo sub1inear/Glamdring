@@ -1,6 +1,7 @@
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <random>
 #include <chrono>
@@ -10,6 +11,25 @@
 #include <cstring>
 #include <immintrin.h>
 #include "data.h"
+
+template <typename T, uint32_t S>
+class array_t {
+private:
+    T data[S];
+    uint32_t size;
+public:
+    template <typename... U>
+    array_t(U... array): data(array), size(sizeof...(U)) {};
+    void add(T item) {
+        data[size++] = item;
+    }
+    uint32_t get_size() {
+        return size;
+    }
+    T& operator[](uint32_t idx) {
+        return data[idx];
+    }
+};
 
 class chess_t {
 public:
@@ -109,17 +129,15 @@ public:
     } board;
     
     // precomp.cpp
+    struct magic_t {
+        uint32_t idx;
+        uint64_t magic;
+        uint64_t mask;
+        uint32_t shift;
+    };
     void gen_magics();
 
     // utils.cpp
-    class magic_t {
-    public:
-        int idx;
-        uint64_t magic;
-        uint64_t mask;
-        int shift;
-        void print();
-    };
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
     

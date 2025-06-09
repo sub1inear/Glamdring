@@ -1,4 +1,2 @@
 #pragma once
-
-namespace data {
-};
+#include "chess.h"
