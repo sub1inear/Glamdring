@@ -51,7 +51,8 @@ chess_t::square_t chess_t::file_rank_to_square(square_t file, square_t rank) {
     square += file - 'a';
     return square;
 }
- void chess_t::square_to_file_rank(square_t square, char *out) {
+
+void chess_t::square_to_file_rank(square_t square, char *out) {
     out[0] = 'a' + square % 8;
     out[1] = '8' - square / 8;
     out[2] = '\0';

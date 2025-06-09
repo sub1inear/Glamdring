@@ -114,7 +114,7 @@ static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
        uint64_t blockers = _pdep_u64(i, mask);
        precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
     }
-    for (uint32_t shift = 64 - 12; shift < 64 - 7; shift++) {
+    for (uint32_t shift = 64 - 12; shift < 64 - 6; shift++) {
         for (uint32_t i = 0; i < 1'000'000ul; i++) {
             generation++;
 
@@ -187,11 +187,11 @@ void chess_t::gen_magics() {
     magic_t magics[2][64];
     uint32_t offset = 0;
     std::ofstream fout("data.cpp");
-    fout << "#include \"data.h\"\n\nconstexpr chess_t::magic_t bishop_magics[] = {\n";
+    fout << "#include \"data.h\"\n\nconst chess_t::magic_t bishop_magics[] = {\n";
     print_magics(fout, (magic_t *)&magics[0], offset, false);
-    fout << "};\nconstexpr chess_t::magic_t rook_magics[] = {\n";
+    fout << "};\nconst chess_t::magic_t rook_magics[] = {\n";
     print_magics(fout, (magic_t *)&magics[1], offset, true);
-    fout << "};\nconstexpr uint64_t magic_move_data[] = {\n";
+    fout << "};\nconst uint64_t magic_move_data[] = {\n";
     print_magic_move_data(fout, (magic_t *)&magics[0], false);
     print_magic_move_data(fout, (magic_t *)&magics[1], true);
     fout << "};";

@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
-#include "data.h"
 
 template <typename T, uint32_t S>
 class array_t {
