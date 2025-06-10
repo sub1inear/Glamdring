@@ -97,7 +97,7 @@ static uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
     }
     return moves;
 }
-static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
+static magic_t gen_magic(chess_t::square_t square, bool rook) {
     uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
     uint64_t blockers_size = 1ull <<  __popcnt64(mask); // 2 ^ population count of mask
     
@@ -115,7 +115,7 @@ static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
        precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
     }
     for (uint32_t shift = 64 - 12; shift < 64 - 6; shift++) {
-        for (uint32_t i = 0; i < 1'000'000ul; i++) {
+        for (uint32_t i = 0; i < 1'000'000'000ul; i++) {
             generation++;
 
             bool succeeded = true;
@@ -147,7 +147,7 @@ static chess_t::magic_t gen_magic(chess_t::square_t square, bool rook) {
     return { 0, best_magic, mask, best_shift };
 }
 
-static void print_magics(std::ofstream &fout, chess_t::magic_t *magics, uint32_t &offset, bool rook) {
+static void print_magics(std::ofstream &fout, magic_t *magics, uint32_t &offset, bool rook) {
     for (chess_t::square_t square = 0; square < 64; square++) {
         fout << "    ";
         do {
@@ -156,9 +156,10 @@ static void print_magics(std::ofstream &fout, chess_t::magic_t *magics, uint32_t
         magics[square].idx = offset;
         offset += 1u << (64 - magics[square].shift);
         fout << "{ " << magics[square].idx << ", " << magics[square].magic << ", " << magics[square].mask << ", " << magics[square].shift << " },\n";
+        std::cout << (rook ? "Rook" : "Bishop") <<  " square " << square << '\n';
     }
 }
-static void print_magic_move_data(std::ofstream &fout, chess_t::magic_t *magics, bool rook) {
+static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool rook) {
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
@@ -187,9 +188,9 @@ void chess_t::gen_magics() {
     magic_t magics[2][64];
     uint32_t offset = 0;
     std::ofstream fout("data.cpp");
-    fout << "#include \"data.h\"\n\nconst chess_t::magic_t bishop_magics[] = {\n";
+    fout << "#include \"data.h\"\n\nconst magic_t bishop_magics[] = {\n";
     print_magics(fout, (magic_t *)&magics[0], offset, false);
-    fout << "};\nconst chess_t::magic_t rook_magics[] = {\n";
+    fout << "};\nconst magic_t rook_magics[] = {\n";
     print_magics(fout, (magic_t *)&magics[1], offset, true);
     fout << "};\nconst uint64_t magic_move_data[] = {\n";
     print_magic_move_data(fout, (magic_t *)&magics[0], false);
@@ -197,5 +198,4 @@ void chess_t::gen_magics() {
     fout << "};";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
-
 }

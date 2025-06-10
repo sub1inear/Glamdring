@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
+#include "data.h"
 
 template <typename T, uint32_t S>
 class array_t {
@@ -18,14 +19,18 @@ private:
     uint32_t size;
 public:
     template <typename... U>
-    array_t(U... array): data(array), size(sizeof...(U)) {};
+    array_t(U... array): data(array...), size(sizeof...(U)) {};
     void add(T item) {
         data[size++] = item;
+    }
+    void remove(uint32_t idx) {
+        size--;
+        memmove(data + idx, data + idx + 1, (size - idx) * sizeof(T));
     }
     uint32_t get_size() {
         return size;
     }
-    T& operator[](uint32_t idx) {
+    T &operator[](uint32_t idx) {
         return data[idx];
     }
 };
@@ -81,9 +86,10 @@ public:
     // board.cpp
     class board_t {
     private:
+        alignas(64)
         piece_color_t board[64];
         // TODO: statically allocate
-        std::vector<piece_square_t> pieces;
+        array_t<piece_square_t, 64> pieces;
         uint64_t bitboards[2][6];
 
         color_t to_move;
@@ -98,49 +104,52 @@ public:
         }
         void set_piece(square_t square, piece_color_t piece) {
             board[square] = piece;
-            bitboards[piece.color][piece.piece] |= (uint64_t)1 << (63 - square);
-            pieces.push_back({piece, square});
+            bitboards[piece.color][piece.piece] |= 1ull << (64 - square);
+            pieces.add({piece, square});
         }
         void clear_piece(square_t square, piece_color_t piece) {
+            if (board[square].piece == CLEAR) {
+                return;
+            }
             board[square] = { CLEAR, WHITE };
-            // assumes piece is there
-            bitboards[piece.color][piece.piece] ^= (uint64_t)1 << (63 - square);
-            // assumes no overlapping squares
-            for (std::vector<piece_square_t>::iterator iter = pieces.begin(); iter != pieces.end(); iter++) {
-                if (iter->square == square) {
-                    pieces.erase(iter);
+            bitboards[piece.color][piece.piece] ^= 1ull << (64 - square);
+            // assumes no overlapping pieces
+            for (uint32_t i = 0; i < 64; i++) {
+                if (pieces[i].square == square) {
+                    pieces.remove(i);
                     break;
                 }
             }
-        }
-        void set_to_move(color_t color) {
-            to_move = color;
-        }
-        void set_castling_rights(color_t color, castling_side_t side, bool enable) {
-            castling_rights[color][side] = enable;
-        }
-        void set_en_passant(square_t square) {
-            en_passant = square;
         }
         void print();
         void clear();
         void load_fen(const char *fen);
     } board;
     
+    // movegen.cpp
+    uint64_t gen_rook_moves(square_t square, uint64_t blockers) {
+        magic_t magic = rook_magics[square];
+        uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
+        return magic_move_data[magic.idx + key];
+    }
+    uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
+        magic_t magic = bishop_magics[square];
+        uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
+        return magic_move_data[magic.idx + key];
+    }
+    uint64_t gen_queen_moves(chess_t::square_t square, uint64_t blockers) {
+        return gen_rook_moves(square, blockers) | gen_bishop_moves(square, blockers);
+    }
+    // uint64_t gen_knight_moves(square_t square);
+    // uint64_t gen_king_moves(square_t square);
+    // static void serialize_moves(uint64_t bitboard, array_t<move_t moves, max_moves> &moves);    
+
     // precomp.cpp
-    struct magic_t {
-        uint32_t idx;
-        uint64_t magic;
-        uint64_t mask;
-        uint32_t shift;
-    };
-    void gen_magics();
+    static void gen_magics();
 
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
-    
     static void print_bitboard(uint64_t bitboard);
-    
     int test();
 };
