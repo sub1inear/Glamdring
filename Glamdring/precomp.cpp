@@ -1,13 +1,5 @@
 #include "chess.h"
 
-static uint64_t random64() {
-    static uint64_t seed = 1234609812624019826;
-    seed = seed * 6364136223846793005 + 1442695040888963407;
-    return seed;
-}
-static uint64_t random64_low_bits() {
-    return random64() & random64();
-}
 // heavily inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
 static uint64_t gen_rook_mask(chess_t::square_t square) {
     uint64_t mask = 0;
@@ -110,6 +102,8 @@ static magic_t gen_magic(chess_t::square_t square, bool rook) {
 
     uint64_t generation = 0;
 
+    uint64_t seed = 1234609812624019826;
+
     for (uint32_t i = 0; i < 1 << 12; i++) {
        uint64_t blockers = _pdep_u64(i, mask);
        precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
@@ -119,7 +113,11 @@ static magic_t gen_magic(chess_t::square_t square, bool rook) {
             generation++;
 
             bool succeeded = true;
-            uint64_t magic = random64_low_bits();
+            seed = seed * 6364136223846793005 + 1442695040888963407;
+            uint64_t magic = seed;
+            seed = seed * 6364136223846793005 + 1442695040888963407;
+            magic &= seed;
+
             // if magic does not spread bits in key well enough, skip
             if (__popcnt64((mask * magic) & 0xff00000000000000) < 6) {
                 continue;
@@ -146,17 +144,20 @@ static magic_t gen_magic(chess_t::square_t square, bool rook) {
     }
     return { 0, best_magic, mask, best_shift };
 }
-
-static void print_magics(std::ofstream &fout, magic_t *magics, uint32_t &offset, bool rook) {
+static void gen_piece_magics(magic_t *magics, bool rook) {
+    #pragma omp parallel for
     for (chess_t::square_t square = 0; square < 64; square++) {
-        fout << "    ";
         do {
-            magics[square] = gen_magic(square, rook);
+             magics[square] = gen_magic(square, rook);
         } while (magics[square].magic == 0);
+        std::cout << (rook ? "Rook" : "Bishop") <<  " square " << square << '\n';
+    }
+}
+static void print_magics(std::ofstream &fout, magic_t *magics, uint32_t &offset) {
+    for (chess_t::square_t square = 0; square < 64; square++) {
         magics[square].idx = offset;
         offset += 1u << (64 - magics[square].shift);
-        fout << "{ " << magics[square].idx << ", " << magics[square].magic << ", " << magics[square].mask << ", " << magics[square].shift << " },\n";
-        std::cout << (rook ? "Rook" : "Bishop") <<  " square " << square << '\n';
+        fout << "    { " << magics[square].idx << ", " << magics[square].magic << ", " << magics[square].mask << ", " << magics[square].shift << " },\n";
     }
 }
 static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool rook) {
@@ -188,10 +189,12 @@ void chess_t::gen_magics() {
     magic_t magics[2][64];
     uint32_t offset = 0;
     std::ofstream fout("data.cpp");
+    gen_piece_magics((magic_t *)&magics[0], false);
+    gen_piece_magics((magic_t *)&magics[1], true);
     fout << "#include \"data.h\"\n\nconst magic_t bishop_magics[] = {\n";
-    print_magics(fout, (magic_t *)&magics[0], offset, false);
+    print_magics(fout, (magic_t *)&magics[0], offset);
     fout << "};\nconst magic_t rook_magics[] = {\n";
-    print_magics(fout, (magic_t *)&magics[1], offset, true);
+    print_magics(fout, (magic_t *)&magics[1], offset);
     fout << "};\nconst uint64_t magic_move_data[] = {\n";
     print_magic_move_data(fout, (magic_t *)&magics[0], false);
     print_magic_move_data(fout, (magic_t *)&magics[1], true);

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
+#include <omp.h>
 #include "data.h"
 
 template <typename T, uint32_t S>
