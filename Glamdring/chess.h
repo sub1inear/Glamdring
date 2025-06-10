@@ -1,5 +1,4 @@
 #pragma once
-#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -12,7 +11,6 @@
 #include <immintrin.h>
 #include <omp.h>
 #include "data.h"
-
 #pragma comment(lib, "libomp.lib")
 
 template <typename T, uint32_t S>
@@ -69,7 +67,7 @@ public:
         A2, B2, C2, D2, E2, F2, G2, H2,
         A1, B1, C1, D1, E1, F1, G1, H1,
     };
-    
+    // TODO: use 1 byte
     struct piece_color_t {
         piece_t piece;
         color_t color;
@@ -91,7 +89,6 @@ public:
     private:
         alignas(64)
         piece_color_t board[64];
-        // TODO: statically allocate
         array_t<piece_square_t, 64> pieces;
         uint64_t bitboards[2][6];
 
@@ -130,25 +127,33 @@ public:
     } board;
     
     // movegen.cpp
-    uint64_t gen_rook_moves(square_t square, uint64_t blockers) {
+    uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies) {
         magic_t magic = rook_magics[square];
         uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
-        return magic_move_data[magic.idx + key];
+        uint64_t moves = magic_move_data[magic.idx + key];
+        moves &= ~allies;
+        return moves;
     }
-    uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
-        magic_t magic = bishop_magics[square];
+    uint64_t gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies) {
+        magic_t magic = rook_magics[square];
         uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
-        return magic_move_data[magic.idx + key];
+        uint64_t moves = magic_move_data[magic.idx + key];
+        moves &= ~allies;
+        return moves;
     }
-    uint64_t gen_queen_moves(chess_t::square_t square, uint64_t blockers) {
-        return gen_rook_moves(square, blockers) | gen_bishop_moves(square, blockers);
+    uint64_t gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies) {
+        return gen_rook_moves(square, blockers, allies) | gen_bishop_moves(square, blockers, allies);
     }
-    // uint64_t gen_knight_moves(square_t square);
-    // uint64_t gen_king_moves(square_t square);
+    uint64_t gen_knight_moves(square_t square) {
+        return knight_move_data[square];
+    };
+    uint64_t gen_king_moves(square_t square) {
+        return king_move_data[square];
+    };
     // static void serialize_moves(uint64_t bitboard, array_t<move_t moves, max_moves> &moves);    
 
     // precomp.cpp
-    static void gen_magics();
+    static void gen_precomp_data();
 
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);

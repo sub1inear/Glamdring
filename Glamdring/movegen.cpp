@@ -1,3 +1,3 @@
-#include "chess.h"
 #include "data.h"
+#include "chess.h"
 

@@ -3,5 +3,5 @@
 
 int main(int argc, char **argv) {
     chess_t chess;
-    chess.gen_magics();
+    chess.gen_precomp_data();
 }

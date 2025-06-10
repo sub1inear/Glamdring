@@ -1,5 +1,5 @@
-#include "chess.h"
 #include "data.h"
+#include "chess.h"
 
 // heavily inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
 static uint64_t gen_rook_mask(chess_t::square_t square) {
@@ -184,7 +184,85 @@ static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool roo
         }
     }
 }
-void chess_t::gen_magics() {
+static uint64_t gen_knight_moves(chess_t::square_t square) {
+    uint64_t moves = 0;
+    chess_t::square_t file = square % 8;
+    chess_t::square_t rank = square / 8;
+    if (rank > 1) {
+        if (file < 7) {
+            moves |= 1ull << (square - 15);
+        }
+        if (file > 0) {
+            moves |= 1ull << (square - 17);
+        }
+    }
+    if (file > 1) {
+        if (rank > 0) {
+            moves |= 1ull << (square - 10);
+        }
+        if (rank < 7) {
+            moves |= 1ull << (square + 6);
+        }
+    }
+    if (rank < 6) {
+        if (file < 7) {
+            moves |= 1ull << (square + 17);
+        }
+        if (file > 0) {
+            moves |= 1ull << (square + 15);
+        }
+    }
+    if (file < 6) {
+        if (rank > 0) {
+            moves |= 1ull << (square - 6);
+        }
+        if (rank < 7) {
+            moves |= 1ull << (square + 10);
+        }
+    }
+    return moves;
+}
+static uint64_t gen_king_moves(chess_t::square_t square) {
+    uint64_t moves = 0;
+    chess_t::square_t file = square % 8;
+    chess_t::square_t rank = square / 8;
+    if (rank > 0) {
+        moves |= 1ull << (square - 8);
+        if (file > 0) {
+            moves |= 1ull << (square - 9);
+        }
+        if (file < 7) {
+            moves |= 1ull << (square - 7); 
+        }
+    }
+    if (rank < 7) {
+        moves |= 1ull << (square + 8);
+        if (file > 0) {
+            moves |= 1ull << (square + 7);
+        }
+        if (file < 7) {
+            moves |= 1ull << (square + 9); 
+        }
+    }
+    if (file > 0) {
+        moves |= 1ull << (square - 1);
+    }
+    if (file < 7) {
+        moves |= 1ull << (square + 1);
+    }
+    return moves;
+}
+static void print_non_magic_data(std::ofstream &fout, uint64_t (*func)(chess_t::square_t square)) {
+    for (uint32_t i = 0; i < 16; i++) {
+        fout << "    ";
+        for (uint32_t j = 0; j < 4; j++) {
+            chess_t::square_t square = i * 4 + j;
+            fout << func(square) << "ull, ";
+        }
+        fout << '\n';
+    }
+}
+void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     magic_t magics[2][64];
     uint32_t offset = 0;
@@ -198,6 +276,10 @@ void chess_t::gen_magics() {
     fout << "};\nconst uint64_t magic_move_data[] = {\n";
     print_magic_move_data(fout, (magic_t *)&magics[0], false);
     print_magic_move_data(fout, (magic_t *)&magics[1], true);
+    fout << "};\nconst uint64_t knight_move_data[] = {\n";
+    print_non_magic_data(fout, gen_knight_moves);
+    fout << "};\nconst uint64_t king_move_data[] = {\n";
+    print_non_magic_data(fout, gen_king_moves);
     fout << "};";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
