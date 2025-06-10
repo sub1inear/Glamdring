@@ -1,4 +1,5 @@
 #include "chess.h"
+#include "data.h"
 
 // heavily inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
 static uint64_t gen_rook_mask(chess_t::square_t square) {
@@ -142,22 +143,21 @@ static magic_t gen_magic(chess_t::square_t square, bool rook) {
             }
         }
     }
-    return { 0, best_magic, mask, best_shift };
+    return { best_magic, mask, 0, best_shift };
 }
-static void gen_piece_magics(magic_t *magics, bool rook) {
-    #pragma omp parallel for
+void gen_piece_magics(magic_t *magics, bool rook) {
+    #pragma omp parallel for num_threads(20) schedule(dynamic)
     for (chess_t::square_t square = 0; square < 64; square++) {
         do {
              magics[square] = gen_magic(square, rook);
         } while (magics[square].magic == 0);
-        std::cout << (rook ? "Rook" : "Bishop") <<  " square " << square << '\n';
     }
 }
 static void print_magics(std::ofstream &fout, magic_t *magics, uint32_t &offset) {
     for (chess_t::square_t square = 0; square < 64; square++) {
         magics[square].idx = offset;
         offset += 1u << (64 - magics[square].shift);
-        fout << "    { " << magics[square].idx << ", " << magics[square].magic << ", " << magics[square].mask << ", " << magics[square].shift << " },\n";
+        fout << "    { " << magics[square].magic << "ull, " << magics[square].mask << "ull, " << magics[square].idx << "u, " << magics[square].shift << "u },\n";
     }
 }
 static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool rook) {
@@ -177,7 +177,7 @@ static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool roo
             if (total % 8 == 0) {
                 fout << "    ";
             }
-            fout << moves[i] << ", ";
+            fout << moves[i] << "ull, ";
             if (total % 8 == 7) {
                 fout << "\n";
             }

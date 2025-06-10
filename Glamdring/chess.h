@@ -13,6 +13,8 @@
 #include <omp.h>
 #include "data.h"
 
+#pragma comment(lib, "libomp.lib")
+
 template <typename T, uint32_t S>
 class array_t {
 private:
