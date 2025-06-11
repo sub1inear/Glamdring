@@ -184,7 +184,7 @@ static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool roo
         }
     }
 }
-static uint64_t gen_knight_moves(chess_t::square_t square) {
+static uint64_t gen_knight_moves_slow(chess_t::square_t square) {
     uint64_t moves = 0;
     chess_t::square_t file = square % 8;
     chess_t::square_t rank = square / 8;
@@ -222,7 +222,7 @@ static uint64_t gen_knight_moves(chess_t::square_t square) {
     }
     return moves;
 }
-static uint64_t gen_king_moves(chess_t::square_t square) {
+static uint64_t gen_king_moves_slow(chess_t::square_t square) {
     uint64_t moves = 0;
     chess_t::square_t file = square % 8;
     chess_t::square_t rank = square / 8;
@@ -277,9 +277,9 @@ void chess_t::gen_precomp_data() {
     print_magic_move_data(fout, (magic_t *)&magics[0], false);
     print_magic_move_data(fout, (magic_t *)&magics[1], true);
     fout << "};\nconst uint64_t knight_move_data[] = {\n";
-    print_non_magic_data(fout, gen_knight_moves);
+    print_non_magic_data(fout, gen_knight_moves_slow);
     fout << "};\nconst uint64_t king_move_data[] = {\n";
-    print_non_magic_data(fout, gen_king_moves);
+    print_non_magic_data(fout, gen_king_moves_slow);
     fout << "};";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";

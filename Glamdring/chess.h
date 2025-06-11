@@ -39,17 +39,19 @@ public:
 class chess_t {
 public:
     typedef int32_t square_t;
+    typedef int8_t packed_square_t;
 
     enum color_t : uint8_t {
         WHITE,
         BLACK
     };
+    // knight, bishop, rook, and queen map to move_flags_t
     enum piece_t : uint8_t {
-        PAWN,
         KNIGHT,
         BISHOP,
         ROOK,
         QUEEN,
+        PAWN,
         KING,
         CLEAR
     };
@@ -80,6 +82,58 @@ public:
     struct piece_square_t {
         piece_color_t piece;
         square_t square;
+    };
+    
+    class move_t {
+    public:
+        /*
+        From https://www.chessprogramming.org/Encoding_Moves#From-To_Based
+        Binary Format:
+        0b x x x x
+           ^ ^ ^ ^
+           | | | | -- Special 1
+           | | | ---- Special 2
+           | | ------ Capture
+           | -------- Promotion
+        */
+        enum move_flags_t : uint8_t {
+            QUIET,
+            DOUBLE_PAWN_PUSH,
+            KING_CASTLE,
+            QUEEN_CASTLE,
+            CAPTURE,
+            EN_PASSANT_CAPTURE,
+            PROMOTION = 8,
+            KNIGHT_PROMOTION = 8,
+            BISHOP_PROMOTION,
+            ROOK_PROMOTION,
+            QUEEN_PROMOTION,
+            KNIGHT_PROMOTION_CAPTURE,
+            BISHOP_PROMOTION_CAPTURE,
+            ROOK_PROMOTION_CAPTURE,
+            QUEEN_PROMOTION_CAPTURE,
+        };
+        packed_square_t from/*: 6 bits*/;
+        packed_square_t to/*: 6 bits*/;
+        move_flags_t flags/*: 4 bits*/;
+        move_t(uint16_t value) {
+            from = value >> 10;
+            to = (value >> 4) & 0x3f;
+            flags = (move_flags_t)(value & 0xf);
+        }
+        uint16_t pack() {
+            return from << 10 | to << 4 | flags;
+        }
+        bool is_capture() {
+            return flags & CAPTURE;
+        }
+        bool is_promotion() {
+            return flags & PROMOTION;
+        }
+        piece_t get_promotion() {
+            return (piece_t)(flags & 0x7);
+        }
+
     };
 
     static constexpr square_t null_square = -1;
@@ -151,7 +205,7 @@ public:
         return king_move_data[square];
     };
     // static void serialize_moves(uint64_t bitboard, array_t<move_t moves, max_moves> &moves);    
-
+    
     // precomp.cpp
     static void gen_precomp_data();
 
