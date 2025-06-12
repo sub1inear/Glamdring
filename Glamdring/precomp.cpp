@@ -110,7 +110,7 @@ static magic_t gen_magic(chess_t::square_t square, bool rook) {
        precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
     }
     for (uint32_t shift = 64 - 12; shift < 64 - 6; shift++) {
-        for (uint32_t i = 0; i < 1'000'000'000ul; i++) {
+        for (uint64_t i = 0; i < 100'000'000'000ul; i++) {
             generation++;
 
             bool succeeded = true;
@@ -164,7 +164,7 @@ static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool roo
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-        uint64_t blockers_size = 1ull << __popcnt64(mask);
+        uint64_t blockers_size = 1ull << _mm_popcnt_u64(mask);
         uint32_t moves_size = 1u << (64 - magics[square].shift);
         uint64_t moves[1 << 12]; // allocate on heap? 
         for (uint32_t i = 0; i < blockers_size; i++) {

@@ -1,9 +1,11 @@
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <random>
 #include <chrono>
+#include <initializer_list>
 #include <cctype>
 #include <cassert>
 #include <cstdlib>
@@ -19,8 +21,7 @@ private:
     T data[S];
     uint32_t size;
 public:
-    template <typename... U>
-    array_t(U... array): data(array...), size(sizeof...(U)) {};
+    array_t(uint32_t size) : size(size) {}
     void add(T item) {
         data[size++] = item;
     }
@@ -28,11 +29,17 @@ public:
         size--;
         memmove(data + idx, data + idx + 1, (size - idx) * sizeof(T));
     }
+    void pop() {
+        size--;
+    }
     uint32_t get_size() {
         return size;
     }
     T &operator[](uint32_t idx) {
         return data[idx];
+    }
+    T *last() {
+        return &data[size - 1];
     }
 };
 
@@ -45,13 +52,12 @@ public:
         WHITE,
         BLACK
     };
-    // knight, bishop, rook, and queen map to move_flags_t
     enum piece_t : uint8_t {
+        PAWN,
         KNIGHT,
         BISHOP,
         ROOK,
         QUEEN,
-        PAWN,
         KING,
         CLEAR
     };
@@ -69,8 +75,15 @@ public:
         A2, B2, C2, D2, E2, F2, G2, H2,
         A1, B1, C1, D1, E1, F1, G1, H1,
     };
+
+    static constexpr square_t null_square = -1;
+    static constexpr uint32_t max_ply = 250;
+    
+    chess_t() {}
+
     // TODO: use 1 byte
-    struct piece_color_t {
+    class piece_color_t {
+    public:
         piece_t piece;
         color_t color;
         piece_color_t() {}
@@ -116,7 +129,9 @@ public:
         packed_square_t from/*: 6 bits*/;
         packed_square_t to/*: 6 bits*/;
         move_flags_t flags/*: 4 bits*/;
+        move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
         move_t(uint16_t value) {
+            // TODO: use _bext_u32
             from = value >> 10;
             to = (value >> 4) & 0x3f;
             flags = (move_flags_t)(value & 0xf);
@@ -131,54 +146,45 @@ public:
             return flags & PROMOTION;
         }
         piece_t get_promotion() {
-            return (piece_t)(flags & 0x7);
+            return (piece_t)((flags & 0x7) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
 
     };
 
-    static constexpr square_t null_square = -1;
-    
     // board.cpp
     class board_t {
     private:
         alignas(64)
         piece_color_t board[64];
-        array_t<piece_square_t, 64> pieces;
         uint64_t bitboards[2][6];
 
-        color_t to_move;
-        bool castling_rights[2][2];
-        uint32_t half_move_clock;
-        uint32_t full_moves;
-        square_t en_passant;
-        
+        struct game_state_t {
+            uint32_t half_move_clock;
+            uint32_t full_moves;
+            square_t en_passant;
+            color_t to_move;
+            bool castling_rights[2][2];
+            piece_t captured_piece;
+        };
+        array_t<game_state_t, max_ply> game_state_stack { 1 };
     public:
+        board_t() {}
         piece_color_t get_piece(square_t square) {
             return board[square];
         }
         void set_piece(square_t square, piece_color_t piece) {
             board[square] = piece;
-            bitboards[piece.color][piece.piece] |= 1ull << (64 - square);
-            pieces.add({piece, square});
+            bitboards[piece.color][piece.piece] |= 1ull << square;
         }
         void clear_piece(square_t square, piece_color_t piece) {
-            if (board[square].piece == CLEAR) {
-                return;
-            }
-            board[square] = { CLEAR, WHITE };
-            bitboards[piece.color][piece.piece] ^= 1ull << (64 - square);
-            // assumes no overlapping pieces
-            for (uint32_t i = 0; i < 64; i++) {
-                if (pieces[i].square == square) {
-                    pieces.remove(i);
-                    break;
-                }
-            }
+            board[square].piece = CLEAR;
+            bitboards[piece.color][piece.piece] &= ~(1ull << square);
         }
         void print();
         void clear();
         void load_fen(const char *fen);
-    } board;
+    };
+    board_t board;
     
     // movegen.cpp
     uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies) {
@@ -204,7 +210,13 @@ public:
     uint64_t gen_king_moves(square_t square) {
         return king_move_data[square];
     };
-    // static void serialize_moves(uint64_t bitboard, array_t<move_t moves, max_moves> &moves);    
+    static void serialize_moves(square_t start_square, uint64_t bitboard, array_t<move_t, max_ply> &moves) {
+        while (bitboard) {
+            chess_t::square_t end_square = _tzcnt_u64(bitboard);
+            moves.add({start_square, end_square, move_t::QUIET});
+            bitboard &= bitboard - 1; // clear LSB
+        }
+    };
     
     // precomp.cpp
     static void gen_precomp_data();

@@ -8,24 +8,24 @@ void chess_t::board_t::print() {
         }
     }
     std::cout << "Castling:\n";
-    static constexpr char castling_names[2][2] = {'K', 'Q', 'k', 'q'};
+    static constexpr char castling_names[2][2] = { { 'K', 'Q' }, { 'k', 'q' } };
     for (uint32_t color = 0; color < 2; color++) {
         for (uint32_t side = 0; side < 2; side++) {
-            if (castling_rights[color][side]) {
+            if (game_state_stack.last()->castling_rights[color][side]) {
                 std::cout << castling_names[color][side];
             }
         }
     }
     std::cout << "\nEn Passant:\n";
-    if (en_passant == null_square) {
+    if (game_state_stack.last()->en_passant == null_square) {
         std::cout << "None";
     } else {
         char out[3];
-        chess_t::square_to_file_rank(en_passant, out);
+        chess_t::square_to_file_rank(game_state_stack.last()->en_passant, out);
         std::cout << out;
     }
-    std::cout << "\nHalf Move Clock:\n" << half_move_clock;
-    std::cout << "\nFull Moves:\n" << full_moves;
+    std::cout << "\nHalf Move Clock:\n" << game_state_stack.last()->half_move_clock;
+    std::cout << "\nFull Moves:\n" << game_state_stack.last()->full_moves;
 }
 
 void chess_t::board_t::clear() {
@@ -47,38 +47,38 @@ void chess_t::board_t::load_fen(const char *fen) {
     fen_idx++;
     switch (fen[fen_idx]) {
     case 'w':
-        set_to_move(WHITE);
+        game_state_stack.last()->to_move = WHITE;
         break;
     case 'b':
-        set_to_move(BLACK);
+        game_state_stack.last()->to_move = BLACK;
         break;
     }
     fen_idx += 2;
     for (; fen[fen_idx] != ' '; fen_idx++) {
         switch (fen[fen_idx]) {
         case 'K':
-            set_castling_rights(WHITE, KINGSIDE, true);
+            game_state_stack.last()->castling_rights[WHITE][KINGSIDE] = true;
             break;
         case 'Q':
-            set_castling_rights(WHITE, QUEENSIDE, true);
+            game_state_stack.last()->castling_rights[WHITE][QUEENSIDE] = true;
             break;
         case 'k':
-            set_castling_rights(BLACK, KINGSIDE, true);
+            game_state_stack.last()->castling_rights[BLACK][KINGSIDE] = true;
             break;
         case 'q':
-            set_castling_rights(BLACK, QUEENSIDE, true);
+            game_state_stack.last()->castling_rights[WHITE][QUEENSIDE] = true;
             break;
         }
     }
     fen_idx++;
     if (fen[fen_idx] == '-') {
-        set_en_passant(null_square);
+        game_state_stack.last()->en_passant = null_square;
     } else {
         char file = fen[fen_idx];
         fen_idx++;
         char rank = fen[fen_idx];
-        set_en_passant(file_rank_to_square(file, rank));
+        game_state_stack.last()->en_passant = file_rank_to_square(file, rank);
     }
     fen_idx++;
-    std::sscanf(&fen[fen_idx], "%n %n", &half_move_clock, &full_moves);
+    std::sscanf(&fen[fen_idx], "%n %n", &game_state_stack.last()->half_move_clock, &game_state_stack.last()->full_moves);
 }
