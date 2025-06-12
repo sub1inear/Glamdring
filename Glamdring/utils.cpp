@@ -59,9 +59,9 @@ void chess_t::square_to_file_rank(square_t square, char *out) {
 }
  
 void chess_t::print_bitboard(uint64_t bitboard) {
-    for (uint32_t i = 0; i < 8; i++) {
-        for (uint32_t j = 0; j < 8; j++) {
-            std::cout << ((bitboard >> (i * 8 + j)) & 0x1) << ' ';
+    for (int32_t i = 7; i >= 0; i--) {
+        for (int32_t j = 7; j >= 0; j--) {
+            std::cout << ((bitboard >> ((i * 8 + j))) & 0x1) << ' ';
         }
         std::cout << '\n';
     }

@@ -1,11 +1,16 @@
 #include "chess.h"
 
+chess_t::square_t chess_t::board_t::get_king_square(color_t to_move) {
+    return _tzcnt_u64(bitboards[to_move][KING]);
+}
+
 void chess_t::board_t::print() {
-    for (square_t square = 0; square < 64; square++) {
-        std::cout << (char)get_piece(square) << ' ';
-        if (square % 8 == 0) {
-            std::cout << "\n";
+    for (uint32_t i = 0; i < 8; i++) {
+        for (uint32_t j = 0; j < 8; j++) {
+            chess_t::square_t square = i * 8 + j;
+            std::cout << (char)get_piece(square) << ' ';
         }
+        std::cout << '\n';
     }
     std::cout << "Castling:\n";
     static constexpr char castling_names[2][2] = { { 'K', 'Q' }, { 'k', 'q' } };
@@ -30,6 +35,9 @@ void chess_t::board_t::print() {
 
 void chess_t::board_t::clear() {
     memset(board, CLEAR, sizeof(board));
+    memset(bitboards, 0, sizeof(bitboards));
+    memset(game_state_stack.data, 0, sizeof(game_state_stack.data));
+    game_state_stack.size = 1;
 }
 
 void chess_t::board_t::load_fen(const char *fen) {

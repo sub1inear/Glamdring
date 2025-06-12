@@ -1,5 +1,5 @@
-#include "data.h"
 #include "chess.h"
+#include "data.h"
 
 // heavily inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
 static uint64_t gen_rook_mask(chess_t::square_t square) {
@@ -164,11 +164,11 @@ static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool roo
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-        uint64_t blockers_size = 1ull << _mm_popcnt_u64(mask);
+        uint64_t blockers_size = 1ull << _mm_popcnt_u64(mask); // get num of 1's in mask
         uint32_t moves_size = 1u << (64 - magics[square].shift);
-        uint64_t moves[1 << 12]; // allocate on heap? 
+        uint64_t moves[1 << 12]; // TODO: allocate on heap? 
         for (uint32_t i = 0; i < blockers_size; i++) {
-            uint64_t blockers = _pdep_u64(i, mask);
+            uint64_t blockers = _pdep_u64(i, mask); // deposit bits in i according to mask
             uint64_t key = blockers * magics[square].magic >> magics[square].shift;
             uint64_t move = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
             moves[key] = move;

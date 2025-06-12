@@ -12,16 +12,15 @@
 #include <cstring>
 #include <immintrin.h>
 #include <omp.h>
-#include "data.h"
 #pragma comment(lib, "libomp.lib")
 
 template <typename T, uint32_t S>
 class array_t {
-private:
+public:
     T data[S];
     uint32_t size;
-public:
-    array_t(uint32_t size) : size(size) {}
+
+    array_t(uint32_t size = 0) : size(size) {}
     void add(T item) {
         data[size++] = item;
     }
@@ -31,9 +30,6 @@ public:
     }
     void pop() {
         size--;
-    }
-    uint32_t get_size() {
-        return size;
     }
     T &operator[](uint32_t idx) {
         return data[idx];
@@ -78,7 +74,8 @@ public:
 
     static constexpr square_t null_square = -1;
     static constexpr uint32_t max_ply = 250;
-    
+    static constexpr uint32_t max_moves = 218;
+
     chess_t() {}
 
     // TODO: use 1 byte
@@ -129,6 +126,7 @@ public:
         packed_square_t from/*: 6 bits*/;
         packed_square_t to/*: 6 bits*/;
         move_flags_t flags/*: 4 bits*/;
+        move_t() {}
         move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
         move_t(uint16_t value) {
             // TODO: use _bext_u32
@@ -150,10 +148,11 @@ public:
         }
 
     };
+    typedef array_t<move_t, max_moves> move_array_t; 
 
     // board.cpp
     class board_t {
-    private:
+    public:
         alignas(64)
         piece_color_t board[64];
         uint64_t bitboards[2][6];
@@ -166,8 +165,8 @@ public:
             bool castling_rights[2][2];
             piece_t captured_piece;
         };
-        array_t<game_state_t, max_ply> game_state_stack { 1 };
-    public:
+        array_t<game_state_t, max_ply> game_state_stack;
+
         board_t() {}
         piece_color_t get_piece(square_t square) {
             return board[square];
@@ -180,6 +179,7 @@ public:
             board[square].piece = CLEAR;
             bitboards[piece.color][piece.piece] &= ~(1ull << square);
         }
+        square_t get_king_square(color_t to_move);
         void print();
         void clear();
         void load_fen(const char *fen);
@@ -187,36 +187,15 @@ public:
     board_t board;
     
     // movegen.cpp
-    uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies) {
-        magic_t magic = rook_magics[square];
-        uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
-        uint64_t moves = magic_move_data[magic.idx + key];
-        moves &= ~allies;
-        return moves;
-    }
-    uint64_t gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies) {
-        magic_t magic = rook_magics[square];
-        uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
-        uint64_t moves = magic_move_data[magic.idx + key];
-        moves &= ~allies;
-        return moves;
-    }
-    uint64_t gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies) {
-        return gen_rook_moves(square, blockers, allies) | gen_bishop_moves(square, blockers, allies);
-    }
-    uint64_t gen_knight_moves(square_t square) {
-        return knight_move_data[square];
-    };
-    uint64_t gen_king_moves(square_t square) {
-        return king_move_data[square];
-    };
-    static void serialize_moves(square_t start_square, uint64_t bitboard, array_t<move_t, max_ply> &moves) {
-        while (bitboard) {
-            chess_t::square_t end_square = _tzcnt_u64(bitboard);
-            moves.add({start_square, end_square, move_t::QUIET});
-            bitboard &= bitboard - 1; // clear LSB
-        }
-    };
+    static void serialize_bitboard(square_t start_square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
+    void gen_knight_moves(square_t square, uint64_t enemies, move_array_t &moves);
+    void gen_bishop_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
+    void gen_rook_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
+    void gen_queen_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
+    void gen_king_moves(square_t square, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
+    uint64_t gen_blockers();
+    uint64_t gen_allies();
+    move_array_t gen_moves();
     
     // precomp.cpp
     static void gen_precomp_data();
