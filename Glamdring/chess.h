@@ -201,11 +201,11 @@ public:
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t enemies, move_array_t &moves);
-    void gen_knight_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves);
-    void gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
-    void gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
-    void gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
-    void gen_king_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves);
+    uint64_t gen_knight_moves(square_t square, uint64_t allies);
+    uint64_t gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies);
+    uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies);
+    uint64_t gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies);
+    uint64_t gen_king_moves(square_t square, uint64_t allies);
     uint64_t gen_blockers();
     uint64_t gen_allies();
     move_array_t gen_moves();
