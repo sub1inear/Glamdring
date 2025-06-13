@@ -90,98 +90,32 @@ static uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
     }
     return moves;
 }
-static magic_t gen_magic(chess_t::square_t square, bool rook) {
-    uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-    uint64_t blockers_size = 1ull <<  __popcnt64(mask); // 2 ^ population count of mask
-    
-    uint64_t best_magic = 0;
-    uint32_t best_shift = 0;
-
-    uint64_t precomp_moves[1 << 12];
-    uint64_t moves[1 << 12];
-    uint64_t used[1 << 12] {0};
-
-    uint64_t generation = 0;
-
-    uint64_t seed = 1234609812624019826;
-
-    for (uint32_t i = 0; i < 1 << 12; i++) {
-       uint64_t blockers = _pdep_u64(i, mask);
-       precomp_moves[i] = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
-    }
-    for (uint32_t shift = 64 - 12; shift < 64 - 6; shift++) {
-        for (uint64_t i = 0; i < 100'000'000'000ul; i++) {
-            generation++;
-
-            bool succeeded = true;
-            seed = seed * 6364136223846793005 + 1442695040888963407;
-            uint64_t magic = seed;
-            seed = seed * 6364136223846793005 + 1442695040888963407;
-            magic &= seed;
-
-            // if magic does not spread bits in key well enough, skip
-            if (__popcnt64((mask * magic) & 0xff00000000000000) < 6) {
-                continue;
-            }
-            for (uint64_t j = 0; j < blockers_size; j++) {
-                uint64_t blockers = _pdep_u64(j, mask);
-                uint64_t move = precomp_moves[j];
-                uint64_t key = blockers * magic >> shift;
-                
-                if (used[key] != generation) {
-                    moves[key] = move;
-                    used[key] = generation;
-                } else if (moves[key] != move) {
-                    succeeded = false;
-                    break;
-                }
-            }
-            if (succeeded) {
-                best_magic = magic;
-                best_shift = shift;
-                break;
-            }
-        }
-    }
-    return { best_magic, mask, 0, best_shift };
-}
-void gen_piece_magics(magic_t *magics, bool rook) {
-    #pragma omp parallel for num_threads(20) schedule(dynamic)
+static void print_pext(std::ofstream &fout, bool rook) {
+    static uint64_t offset = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
-        do {
-             magics[square] = gen_magic(square, rook);
-        } while (magics[square].magic == 0);
+        uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
+        uint64_t idx = offset;
+        fout << "    { " << mask << "ull, " << "&pext_move_data[" << idx << "] },\n";
+        uint64_t size = 1ull << _mm_popcnt_u64(mask);
+        offset += size;
     }
 }
-static void print_magics(std::ofstream &fout, magic_t *magics, uint32_t &offset) {
-    for (chess_t::square_t square = 0; square < 64; square++) {
-        magics[square].idx = offset;
-        offset += 1u << (64 - magics[square].shift);
-        fout << "    { " << magics[square].magic << "ull, " << magics[square].mask << "ull, " << magics[square].idx << "u, " << magics[square].shift << "u },\n";
-    }
-}
-static void print_magic_move_data(std::ofstream &fout, magic_t *magics, bool rook) {
+static void print_pext_move_data(std::ofstream &fout, bool rook) {
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-        uint64_t blockers_size = 1ull << _mm_popcnt_u64(mask); // get num of 1's in mask
-        uint32_t moves_size = 1u << (64 - magics[square].shift);
-        uint64_t moves[1 << 12]; // TODO: allocate on heap? 
-        for (uint32_t i = 0; i < blockers_size; i++) {
-            uint64_t blockers = _pdep_u64(i, mask); // deposit bits in i according to mask
-            uint64_t key = blockers * magics[square].magic >> magics[square].shift;
-            uint64_t move = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
-            moves[key] = move;
-        }
-        for (uint32_t i = 0; i < moves_size; i++, total++) {
+        uint64_t size = 1ull << _mm_popcnt_u64(mask); // count 1's in mask
+        for (uint32_t i = 0; i < size; i++, total++) {
             if (total % 8 == 0) {
                 fout << "    ";
             }
-            fout << moves[i] << "ull, ";
+            uint64_t blockers = _pdep_u64(i, mask); // deposit bits according to mask
+            uint64_t moves = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
+            fout << moves << "ull, ";
             if (total % 8 == 7) {
-                fout << "\n";
+                fout << '\n';
             }
-        }
+        }        
     }
 }
 static uint64_t gen_knight_moves_slow(chess_t::square_t square) {
@@ -264,18 +198,14 @@ static void print_non_magic_data(std::ofstream &fout, uint64_t (*func)(chess_t::
 }
 void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    magic_t magics[2][64];
-    uint32_t offset = 0;
     std::ofstream fout("data.cpp");
-    gen_piece_magics((magic_t *)&magics[0], false);
-    gen_piece_magics((magic_t *)&magics[1], true);
-    fout << "#include \"data.h\"\n\nconst magic_t bishop_magics[] = {\n";
-    print_magics(fout, (magic_t *)&magics[0], offset);
-    fout << "};\nconst magic_t rook_magics[] = {\n";
-    print_magics(fout, (magic_t *)&magics[1], offset);
-    fout << "};\nconst uint64_t magic_move_data[] = {\n";
-    print_magic_move_data(fout, (magic_t *)&magics[0], false);
-    print_magic_move_data(fout, (magic_t *)&magics[1], true);
+    fout << "#include \"data.h\"\n\nconst pext_t bishop_pext[] = {\n";
+    print_pext(fout, false);
+    fout << "};\nconst pext_t rook_pext[] = {\n";
+    print_pext(fout, true);
+    fout << "};\nconst uint64_t pext_move_data[] = {\n";
+    print_pext_move_data(fout, false);
+    print_pext_move_data(fout, true);
     fout << "};\nconst uint64_t knight_move_data[] = {\n";
     print_non_magic_data(fout, gen_knight_moves_slow);
     fout << "};\nconst uint64_t king_move_data[] = {\n";

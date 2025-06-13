@@ -1,14 +1,12 @@
 #pragma once
 #include <cstdint>
 
-struct magic_t {
-    uint64_t magic;
+struct pext_t {
     uint64_t mask;
-    uint32_t idx;
-    uint32_t shift;
+    const uint64_t *ptr;
 };
-extern const magic_t bishop_magics[];
-extern const magic_t rook_magics[];
-extern const uint64_t magic_move_data[];
+extern const pext_t rook_pext[];
+extern const pext_t bishop_pext[];
+extern const uint64_t pext_move_data[];
 extern const uint64_t knight_move_data[];
 extern const uint64_t king_move_data[];
