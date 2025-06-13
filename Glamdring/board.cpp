@@ -2,13 +2,16 @@
 
 void chess_t::board_t::print() {
     for (uint32_t i = 0; i < 8; i++) {
+        std::cout << "\x1b[38;5;240m" <<  (char)('8' - i) << " \033[0m";
         for (uint32_t j = 0; j < 8; j++) {
             chess_t::square_t square = i * 8 + j;
             std::cout << (char)get_piece(square) << ' ';
         }
         std::cout << '\n';
     }
-    std::cout << "Castling:\n";
+    std::cout << "\x1b[38;5;240m  a b c d e f g h\033[0m\nTo Move:\n";
+    std::cout << (game_state_stack.last()->to_move == WHITE ? "White" : "Black");
+    std::cout << "\nCastling:\n";
     static constexpr char castling_names[2][2] = { { 'K', 'Q' }, { 'k', 'q' } };
     for (uint32_t color = 0; color < 2; color++) {
         for (uint32_t side = 0; side < 2; side++) {
@@ -71,7 +74,7 @@ void chess_t::board_t::load_fen(const char *fen) {
             game_state_stack.last()->castling_rights[BLACK][KINGSIDE] = true;
             break;
         case 'q':
-            game_state_stack.last()->castling_rights[WHITE][QUEENSIDE] = true;
+            game_state_stack.last()->castling_rights[BLACK][QUEENSIDE] = true;
             break;
         }
     }
