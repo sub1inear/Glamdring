@@ -81,6 +81,7 @@ public:
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
+    static void print_square(square_t square);
     static void print_bitboard(uint64_t bitboard);
     int test();
 
@@ -153,11 +154,8 @@ public:
             return (piece_t)((flags & 0x7) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
         void print() {
-            char out[3];
-            chess_t::square_to_file_rank(from, out);
-            std::cout << out;
-            chess_t::square_to_file_rank(to, out);
-            std::cout << out;
+            print_square(from);
+            print_square(to);
             if (is_promotion()) {
                 std::cout << (char)get_promotion();
             }

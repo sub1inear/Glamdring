@@ -24,7 +24,8 @@ chess_t::piece_color_t::piece_color_t(char c) {
         piece = CLEAR;
         break;
     }
-    color = (color_t)islower(c);
+    // islower() can return any non-zero value, need 1 to convert to color
+    color = (color_t)(c >= 'a' && c <= 'z');
 }
 
 chess_t::piece_color_t::operator char() {
@@ -56,6 +57,10 @@ void chess_t::square_to_file_rank(square_t square, char *out) {
     out[0] = 'a' + square % 8;
     out[1] = '8' - square / 8;
     out[2] = '\0';
+}
+
+void chess_t::print_square(square_t square) {
+    std::cout << (char)('a' + square % 8) << (char)('8' - square / 8);
 }
  
 void chess_t::print_bitboard(uint64_t bitboard) {
