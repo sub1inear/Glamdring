@@ -1,9 +1,5 @@
 #include "chess.h"
 
-chess_t::square_t chess_t::board_t::get_king_square(color_t to_move) {
-    return _tzcnt_u64(bitboards[to_move][KING]);
-}
-
 void chess_t::board_t::print() {
     for (uint32_t i = 0; i < 8; i++) {
         for (uint32_t j = 0; j < 8; j++) {
@@ -31,6 +27,7 @@ void chess_t::board_t::print() {
     }
     std::cout << "\nHalf Move Clock:\n" << game_state_stack.last()->half_move_clock;
     std::cout << "\nFull Moves:\n" << game_state_stack.last()->full_moves;
+    std::cout << '\n';
 }
 
 void chess_t::board_t::clear() {

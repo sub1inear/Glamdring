@@ -10,27 +10,28 @@ void chess_t::serialize_bitboard(square_t start_square, uint64_t moves_bitboard,
     }
 }
 
-void chess_t::gen_knight_moves(square_t square, uint64_t enemies, move_array_t &moves) {
+void chess_t::gen_knight_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves) {
     uint64_t moves_bitboard = knight_move_data[square];
+    moves_bitboard &= ~allies;
     serialize_bitboard(square, moves_bitboard, enemies, moves);
 }
-void chess_t::gen_bishop_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves) {
+void chess_t::gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves) {
     magic_t magic = rook_magics[square];
     uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
     uint64_t moves_bitboard = magic_move_data[magic.idx + key];
-    moves_bitboard &= inverse_allies;
+    moves_bitboard &= ~allies;
     serialize_bitboard(square, moves_bitboard, enemies, moves);
 }
 
-void chess_t::gen_rook_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves) {
+void chess_t::gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves) {
     magic_t magic = rook_magics[square];
     uint64_t key = (blockers & magic.mask) * magic.magic >> magic.shift;
     uint64_t moves_bitboard = magic_move_data[magic.idx + key];
-    moves_bitboard &= inverse_allies;
+    moves_bitboard &= ~allies;
     serialize_bitboard(square, moves_bitboard, enemies, moves);
 }
 
-void chess_t::gen_queen_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves) {
+void chess_t::gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves) {
     magic_t rook_magic = rook_magics[square];
     uint64_t rook_key = (blockers & rook_magic.mask) * rook_magic.magic >> rook_magic.shift;
     uint64_t rook_moves_bitboard = magic_move_data[rook_magic.idx + rook_key];
@@ -40,13 +41,13 @@ void chess_t::gen_queen_moves(square_t square, uint64_t blockers, uint64_t inver
     uint64_t bishop_moves_bitboard = magic_move_data[bishop_magic.idx + bishop_key];
         
     uint64_t moves_bitboard = rook_moves_bitboard | bishop_moves_bitboard;
-    moves_bitboard &= ~inverse_allies;
+    moves_bitboard &= ~allies;
     serialize_bitboard(square, moves_bitboard, enemies, moves);
 }
 
-void chess_t::gen_king_moves(square_t square, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves) {
+void chess_t::gen_king_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves) {
     uint64_t moves_bitboard = king_move_data[square];
-    moves_bitboard &= inverse_allies;
+    moves_bitboard &= ~allies;
     serialize_bitboard(square, moves_bitboard, enemies, moves);
 };
 
@@ -64,32 +65,32 @@ uint64_t chess_t::gen_allies() {
 chess_t::move_array_t chess_t::gen_moves() {
     move_array_t moves;
     uint64_t blockers = gen_blockers();
-    uint64_t inverse_allies = ~gen_allies();
-    uint64_t enemies = blockers & inverse_allies;
+    uint64_t allies = gen_allies();
+    uint64_t enemies = blockers & ~allies;
     color_t to_move = board.game_state_stack.last()->to_move;
     for (uint64_t pawns = board.bitboards[to_move][PAWN]; pawns; pawns &= pawns - 1 /* remove lsb */) {
         chess_t::square_t square = _tzcnt_u64(pawns); // count trailing zeros
     }
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights &= knights - 1 /* remove lsb */) {
         chess_t::square_t square = _tzcnt_u64(knights); // count trailing zeros
-        gen_knight_moves(square, enemies, moves);
+        gen_knight_moves(square, allies, enemies, moves);
     }
     for (uint64_t bishops = board.bitboards[to_move][BISHOP]; bishops; bishops &= bishops - 1 /* remove lsb */) {
         chess_t::square_t square = _tzcnt_u64(bishops); // count trailing zeros
-        gen_bishop_moves(square, blockers, inverse_allies, enemies, moves);
+        gen_bishop_moves(square, blockers, allies, enemies, moves);
     }
     for (uint64_t rooks = board.bitboards[to_move][ROOK]; rooks; rooks &= rooks - 1 /* remove lsb */) {
         chess_t::square_t square = _tzcnt_u64(rooks); // count trailing zeros
-        gen_rook_moves(square, blockers, inverse_allies, enemies, moves);
+        gen_rook_moves(square, blockers, allies, enemies, moves);
     }
     for (uint64_t queens = board.bitboards[to_move][QUEEN]; queens; queens &= queens - 1 /* remove lsb */) {
         chess_t::square_t square = _tzcnt_u64(queens); // count trailing zeros
-        gen_queen_moves(square, blockers, inverse_allies, enemies, moves);
+        gen_queen_moves(square, blockers, allies, enemies, moves);
     }
-    // assume one king
+    // assumes one king
     {
-        chess_t::square_t square = board.get_king_square(to_move);
-        gen_king_moves(square, inverse_allies, enemies, moves);
+        chess_t::square_t square = _tzcnt_u64(board.bitboards[to_move][KING]);
+        gen_king_moves(square, allies, enemies, moves);
     }
     return moves;
 }

@@ -78,6 +78,12 @@ public:
 
     chess_t() {}
 
+    // utils.cpp
+    static square_t file_rank_to_square(square_t file, square_t rank);
+    static void square_to_file_rank(square_t square, char *out);
+    static void print_bitboard(uint64_t bitboard);
+    int test();
+
     // TODO: use 1 byte
     class piece_color_t {
     public:
@@ -146,7 +152,16 @@ public:
         piece_t get_promotion() {
             return (piece_t)((flags & 0x7) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
-
+        void print() {
+            char out[3];
+            chess_t::square_to_file_rank(from, out);
+            std::cout << out;
+            chess_t::square_to_file_rank(to, out);
+            std::cout << out;
+            if (is_promotion()) {
+                std::cout << (char)get_promotion();
+            }
+        }
     };
     typedef array_t<move_t, max_moves> move_array_t; 
 
@@ -179,7 +194,6 @@ public:
             board[square].piece = CLEAR;
             bitboards[piece.color][piece.piece] &= ~(1ull << square);
         }
-        square_t get_king_square(color_t to_move);
         void print();
         void clear();
         void load_fen(const char *fen);
@@ -188,21 +202,15 @@ public:
     
     // movegen.cpp
     static void serialize_bitboard(square_t start_square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
-    void gen_knight_moves(square_t square, uint64_t enemies, move_array_t &moves);
-    void gen_bishop_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
-    void gen_rook_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
-    void gen_queen_moves(square_t square, uint64_t blockers, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
-    void gen_king_moves(square_t square, uint64_t inverse_allies, uint64_t enemies, move_array_t &moves);
+    void gen_knight_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves);
+    void gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
+    void gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
+    void gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies, uint64_t enemies, move_array_t &moves);
+    void gen_king_moves(square_t square, uint64_t allies, uint64_t enemies, move_array_t &moves);
     uint64_t gen_blockers();
     uint64_t gen_allies();
     move_array_t gen_moves();
     
     // precomp.cpp
     static void gen_precomp_data();
-
-    // utils.cpp
-    static square_t file_rank_to_square(square_t file, square_t rank);
-    static void square_to_file_rank(square_t square, char *out);
-    static void print_bitboard(uint64_t bitboard);
-    int test();
 };
