@@ -22,11 +22,15 @@ public:
     void pop() {
         size--;
     }
-    T &operator[](uint32_t idx) {
-        return data[idx];
-    }
     T *last() {
         return &data[size - 1];
+    }
+    T *next() {
+        size++;
+        return last();
+    }
+    T &operator[](uint32_t idx) {
+        return data[idx];
     }
 };
 
@@ -167,7 +171,7 @@ public:
             square_t en_passant;
             color_t to_move;
             bool castling_rights[2][2];
-            piece_t captured_piece;
+            piece_color_t captured_piece;
         };
         array_t<game_state_t, max_ply> game_state_stack;
 
@@ -186,6 +190,8 @@ public:
         void print();
         void clear();
         void load_fen(const char *fen);
+        void make_move(move_t move);
+        void undo_move(move_t move);
     };
     board_t board;
     
