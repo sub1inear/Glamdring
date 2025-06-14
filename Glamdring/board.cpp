@@ -97,25 +97,54 @@ void chess_t::board_t::make_move(move_t move) {
     
     piece_color_t start_piece = get_piece(move.from);
     piece_color_t new_piece = start_piece;
+    piece_color_t captured_piece = get_piece(move.to);
+
+    square_t new_en_passant = old_game_state->to_move == WHITE ? move.to + 8 : move.to - 8;
+
     if (move.is_promotion()) {
         new_piece = { move.get_promotion(), old_game_state->to_move };
     }
-    piece_color_t captured_piece = get_piece(move.to);
-    
+
     set_piece(move.to, start_piece);
+
+    if (move.flags == move_t::EN_PASSANT_CAPTURE) {
+        captured_piece = get_piece(new_en_passant);
+        clear_piece(new_en_passant, captured_piece);
+    }
+    
     clear_piece(move.from, start_piece);
     
     // reset half move clock on captures and pawn moves, reset otherwise
     new_game_state->half_move_clock = move.is_capture() || start_piece.piece == PAWN ? 0 : old_game_state->half_move_clock + 1;
     new_game_state->full_moves = old_game_state->to_move == WHITE ? old_game_state->full_moves : old_game_state->full_moves + 1;
-    new_game_state->en_passant = null_square;
-    if (move.flags == move_t::DOUBLE_PAWN_PUSH) {
-        new_game_state->en_passant = old_game_state->to_move == WHITE ? move.to + 8 : move.to - 8;
-    }
+    new_game_state->en_passant = move.flags == move_t::DOUBLE_PAWN_PUSH ? new_en_passant : null_square;
     new_game_state->to_move = (color_t)!old_game_state->to_move;
-    memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
-    
     new_game_state->captured_piece = captured_piece;
+
+    // TODO: optimize with union of uint32_t and castling_rights
+    memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
+    if (move.is_castling()) {
+        // TODO: optimize with union of uint16_t and castling_rights[to_move]
+        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
+        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        castling_side_t side = move.get_castling();
+        square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
+        square_t rook_end_square = data::rook_castling_end_squares[old_game_state->to_move][side];
+        piece_color_t rook = get_piece(rook_start_square);
+        clear_piece(rook_start_square, rook);
+        set_piece(rook_end_square, rook);
+    } else if (start_piece.piece == KING) {
+        // TODO: optimize with union of uint16_t and castling_rights[to_move]
+        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
+        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+    }
+    if (start_piece.piece == ROOK) {
+        // TODO: optimize with union of uint16_t and castling_rights[to_move]
+        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
+        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+    }
+   
+
 }
 
 void chess_t::board_t::undo_move(move_t move) {

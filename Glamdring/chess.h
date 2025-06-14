@@ -145,6 +145,12 @@ public:
         bool is_promotion() {
             return flags & PROMOTION;
         }
+        bool is_castling() {
+            return flags == KING_CASTLE || flags == QUEEN_CASTLE;
+        }
+        castling_side_t get_castling() {
+            return (castling_side_t)(flags & 0x1);
+        }
         piece_t get_promotion() {
             return (piece_t)((flags & 0x7) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
@@ -169,8 +175,12 @@ public:
             uint32_t half_move_clock;
             uint32_t full_moves;
             square_t en_passant;
+            union {
+                bool castling_rights[2][2];
+                uint32_t raw_castling_rights;
+                uint16_t raw_half_castling_rights[2];
+            };
             color_t to_move;
-            bool castling_rights[2][2];
             piece_color_t captured_piece;
         };
         array_t<game_state_t, max_ply> game_state_stack;
