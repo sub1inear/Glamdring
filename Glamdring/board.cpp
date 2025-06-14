@@ -121,12 +121,9 @@ void chess_t::board_t::make_move(move_t move) {
     new_game_state->to_move = (color_t)!old_game_state->to_move;
     new_game_state->captured_piece = captured_piece;
 
-    // TODO: optimize with union of uint32_t and castling_rights
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
     if (move.is_castling()) {
-        // TODO: optimize with union of uint16_t and castling_rights[to_move]
-        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
-        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
         castling_side_t side = move.get_castling();
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
         square_t rook_end_square = data::rook_castling_end_squares[old_game_state->to_move][side];
@@ -134,14 +131,12 @@ void chess_t::board_t::make_move(move_t move) {
         clear_piece(rook_start_square, rook);
         set_piece(rook_end_square, rook);
     } else if (start_piece.piece == KING) {
-        // TODO: optimize with union of uint16_t and castling_rights[to_move]
-        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
-        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        // TODO: use & for branchless clear
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
     }
     if (start_piece.piece == ROOK) {
-        // TODO: optimize with union of uint16_t and castling_rights[to_move]
-        new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;
-        new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        // TODO: use & for branchless clear
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
     }
    
 

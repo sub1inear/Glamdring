@@ -175,11 +175,7 @@ public:
             uint32_t half_move_clock;
             uint32_t full_moves;
             square_t en_passant;
-            union {
-                bool castling_rights[2][2];
-                uint32_t raw_castling_rights;
-                uint16_t raw_half_castling_rights[2];
-            };
+            bool castling_rights[2][2];
             color_t to_move;
             piece_color_t captured_piece;
         };
