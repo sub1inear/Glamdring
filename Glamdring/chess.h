@@ -2,17 +2,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <random>
 #include <chrono>
-#include <initializer_list>
 #include <cctype>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
-#include <omp.h>
-#pragma comment(lib, "libomp.lib")
 
 template <typename T, uint32_t S>
 class array_t {
@@ -23,10 +18,6 @@ public:
     array_t(uint32_t size = 0) : size(size) {}
     void add(T item) {
         data[size++] = item;
-    }
-    void remove(uint32_t idx) {
-        size--;
-        memmove(data + idx, data + idx + 1, (size - idx) * sizeof(T));
     }
     void pop() {
         size--;
@@ -206,6 +197,7 @@ public:
     uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies);
     uint64_t gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies);
     uint64_t gen_king_moves(square_t square, uint64_t allies);
+    void gen_castling_moves(square_t square, uint64_t blockers, move_array_t &moves);
     uint64_t gen_blockers();
     uint64_t gen_allies();
     move_array_t gen_moves();

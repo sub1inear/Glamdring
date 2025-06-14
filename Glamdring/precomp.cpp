@@ -96,7 +96,7 @@ static void print_pext(std::ofstream &fout, bool rook) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
         uint64_t idx = offset;
         fout << "    { " << mask << "ull, " << "&pext_move_data[" << idx << "] },\n";
-        uint64_t size = 1ull << _mm_popcnt_u64(mask);
+        uint64_t size = 1ull << _mm_popcnt_u64(mask); // count 1's in mask
         offset += size;
     }
 }
@@ -104,7 +104,7 @@ static void print_pext_move_data(std::ofstream &fout, bool rook) {
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-        uint64_t size = 1ull << _mm_popcnt_u64(mask); // count 1's in mask
+        uint64_t size = 1ull << _mm_popcnt_u64(mask);
         for (uint32_t i = 0; i < size; i++, total++) {
             if (total % 8 == 0) {
                 fout << "    ";
@@ -199,18 +199,25 @@ static void print_non_magic_data(std::ofstream &fout, uint64_t (*func)(chess_t::
 void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     std::ofstream fout("data.cpp");
-    fout << "#include \"data.h\"\n\nconst pext_t bishop_pext[] = {\n";
+    fout << "#include \"data.h\"\n\n" 
+            "namespace data {\n"
+            "const pext_t bishop_pext[] = {\n";
     print_pext(fout, false);
-    fout << "};\nconst pext_t rook_pext[] = {\n";
+    fout << "};"
+            "\nconst pext_t rook_pext[] = {\n";
     print_pext(fout, true);
-    fout << "};\nconst uint64_t pext_move_data[] = {\n";
+    fout << "};\n"
+            "const uint64_t pext_move_data[] = {\n";
     print_pext_move_data(fout, false);
     print_pext_move_data(fout, true);
-    fout << "};\nconst uint64_t knight_move_data[] = {\n";
+    fout << "};\n"
+            "const uint64_t knight_move_data[] = {\n";
     print_non_magic_data(fout, gen_knight_moves_slow);
-    fout << "};\nconst uint64_t king_move_data[] = {\n";
+    fout << "};\n"
+            "const uint64_t king_move_data[] = {\n";
     print_non_magic_data(fout, gen_king_moves_slow);
-    fout << "};";
+    fout << "};\n"
+            "}";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
 }

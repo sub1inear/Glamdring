@@ -1,5 +1,6 @@
 #include "data.h"
 
+namespace data {
 const pext_t bishop_pext[] = {
     { 18049651735527936ull, &pext_move_data[0] },
     { 70506452091904ull, &pext_move_data[64] },
@@ -13626,3 +13627,4 @@ const uint64_t king_move_data[] = {
     144959613005987840ull, 362258295026614272ull, 724516590053228544ull, 1449033180106457088ull, 
     2898066360212914176ull, 5796132720425828352ull, 11592265440851656704ull, 4665729213955833856ull, 
 };
+}
