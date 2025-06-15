@@ -123,7 +123,7 @@ void chess_t::board_t::make_move(move_t move) {
 
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
     if (move.is_castling()) {
-        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
         castling_side_t side = move.get_castling();
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
         square_t rook_end_square = data::rook_castling_end_squares[old_game_state->to_move][side];
@@ -132,11 +132,11 @@ void chess_t::board_t::make_move(move_t move) {
         set_piece(rook_end_square, rook);
     } else if (start_piece.piece == KING) {
         // TODO: use & for branchless clear
-        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
     }
     if (start_piece.piece == ROOK) {
         // TODO: use & for branchless clear
-        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move));
+        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
     }
    
 

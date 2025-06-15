@@ -193,7 +193,29 @@ static void print_non_magic_data(std::ofstream &fout, uint64_t (*func)(chess_t::
             chess_t::square_t square = i * 4 + j;
             fout << func(square) << "ull, ";
         }
-        fout << '\n';
+        fout << '\n';                      
+    }
+}
+static uint64_t gen_pawn_attacks(chess_t::color_t color, chess_t::square_t square) {
+    uint64_t pawn = 1ull << square;
+    constexpr uint64_t file_a = 0x101010101010101;
+    constexpr uint64_t file_h = 0x8080808080808080;
+    if (color == chess_t::WHITE) {
+        return (pawn & ~file_a) >> 9 | (pawn & ~file_h) >> 7;
+    }
+    return (pawn & ~file_h) << 9 | (pawn & ~file_a) << 7;
+}
+static void print_pawn_attack_data(std::ofstream &fout) {
+    for (uint32_t color = 0; color < 2; color++) {
+        fout << "    {";
+        for (uint32_t i = 0; i < 16; i++) {
+            fout << "\n    ";
+            for (uint32_t j = 0; j < 4; j++) {
+                chess_t::square_t square = i * 4 + j;
+                fout << gen_pawn_attacks((chess_t::color_t)color, square) << "ull, ";
+            }
+        }
+        fout << "\n    }, \n";
     }
 }
 void chess_t::gen_precomp_data() {
@@ -216,6 +238,10 @@ void chess_t::gen_precomp_data() {
     fout << "};\n"
             "const uint64_t king_move_data[] = {\n";
     print_non_magic_data(fout, gen_king_moves_slow);
+    fout << "};\n"
+            "const uint64_t pawn_attack_data[][64] = {\n";
+    print_pawn_attack_data(fout);
+
     fout << "};\n"
             "}";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
