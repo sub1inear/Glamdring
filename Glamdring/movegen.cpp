@@ -209,8 +209,7 @@ uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
     color_t other_to_move = (color_t)!to_move;
 
     // xray through king (bitboard must ensure king can't move backward out of check)
-    uint64_t king_bitboard = board.bitboards[to_move][KING];
-    board.bitboards[to_move][KING] = 0ull;
+    blockers &= ~board.bitboards[to_move][KING];
 
     // assumes one king
     {
@@ -237,7 +236,6 @@ uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
         chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
         attacked |= gen_queen_moves(queen_square, blockers, 0ull);
     }
-    board.bitboards[to_move][KING] = king_bitboard;
     return attacked;
 }
 
