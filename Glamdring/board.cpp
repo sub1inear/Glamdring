@@ -110,11 +110,13 @@ void chess_t::board_t::make_move(move_t move) {
         new_piece = { move.get_promotion(), old_game_state->to_move };
     }
 
-    set_piece(move.to, start_piece);
+    set_piece(move.to, new_piece);
 
     if (move.flags == move_t::EN_PASSANT_CAPTURE) {
         captured_piece = get_piece(new_en_passant);
         clear_piece(new_en_passant, captured_piece);
+    } else if (move.is_capture()) {
+        clear_piece_bitboard(move.to, captured_piece);
     }
     
     clear_piece(move.from, start_piece);
@@ -144,11 +146,19 @@ void chess_t::board_t::make_move(move_t move) {
         memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
     }
     if (start_piece.piece == ROOK) {
-        // TODO: use & for branchless clear
-        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
+        if (move.from == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
+            new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;    
+        } else if (move.from == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
+            new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        }
     }
-   
-
+    if (captured_piece.piece == ROOK) {
+        if (move.to == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
+            new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;    
+        } else if (move.to == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
+            new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
+        }
+    }
 }
 
 void chess_t::board_t::undo_move(move_t move) {
@@ -159,9 +169,9 @@ void chess_t::board_t::undo_move(move_t move) {
     set_piece(move.from, start_piece);
     clear_piece_bitboard(move.to, start_piece);
 
-    set_piece(move.to, game_state->captured_piece);
-
-    
+    if (move.is_capture()) {
+        set_piece(move.to, game_state->captured_piece);
+    }
 
     game_state_stack.pop();
 }

@@ -100,15 +100,15 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
 
         legal |= to_move == WHITE ? (legal & en_passant_bitboard) >> 8 : (legal & en_passant_bitboard) << 8;
 
-        if (capture_left_move & en_passant_bitboard) {
+        if (capture_left_move & en_passant_bitboard & legal ) {
             chess_t::square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
-            if (1ull << en_passant & legal & pin_lines[start_square]) {
+            if (en_passant_bitboard & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
             }
         }
-        if (capture_right_move & en_passant_bitboard) {
+        if (capture_right_move & en_passant_bitboard & legal) {
             chess_t::square_t start_square = to_move == WHITE ? en_passant + 7 : en_passant - 7;
-            if (1ull << en_passant & legal & pin_lines[start_square]) {
+            if (en_passant_bitboard & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
             }
         }
@@ -279,6 +279,7 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
         chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
         pin_lines[pinned_square] |= pin;
     }
+
     for ( ; unpinned_allies; unpinned_allies = _blsr_u64(unpinned_allies)) {
         chess_t::square_t ally_square = (chess_t::square_t)_tzcnt_u64(unpinned_allies);
         pin_lines[ally_square] = 0xffffffffffffffffull;
@@ -305,31 +306,35 @@ chess_t::move_array_t chess_t::gen_moves() {
         uint64_t moves_bitboard = gen_king_moves(king_square, allies);
         moves_bitboard &= ~danger;
         serialize_bitboard(king_square, moves_bitboard, enemies, moves);
-        // only king moves allowed when in double check
-        if (num_checkers > 2) {
-            return moves;
-        }
-        gen_castling_moves(king_square, blockers, danger, moves);
+    }
+
+    // only king moves allowed when in double check
+    if (num_checkers > 2) {
+        return moves;
     }
 
     uint64_t pin_lines[64];
-    gen_pins(pin_lines, king_square, danger, allies, enemies);
-    
     uint64_t legal = 0xffffffffffffffffull;
     if (num_checkers == 1) {
+        legal = checkers;
         // inspired by https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
         chess_t::square_t checking_square = (chess_t::square_t)_tzcnt_u64(checkers);
-        switch (board.get_piece(checking_square)) {
+        switch (board.get_piece(checking_square).piece) {
         case BISHOP:
         case ROOK:
         case QUEEN:
-            legal = gen_sliding_between(king_square, checking_square);
-            legal |= checkers;
+            legal |= gen_sliding_between(king_square, checking_square);
             break;
         default:
             break;
         }
+        // can only gen pin lines if not in check
+        memset(pin_lines, 0xff, sizeof(pin_lines));
+    } else {
+        gen_castling_moves(king_square, blockers, danger, moves);
+        gen_pins(pin_lines, king_square, danger, allies, enemies);
     }
+
 
     gen_pawn_moves(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights = _blsr_u64(knights)) {
