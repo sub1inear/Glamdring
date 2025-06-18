@@ -219,14 +219,17 @@ static void print_pawn_attack_data(std::ofstream &fout) {
     }
 }
 static uint64_t gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square) {
+    uint64_t start_bitboard = 1ull << start_square;
     uint64_t end_bitboard = 1ull << end_square;
-    uint64_t rook_moves = gen_rook_moves(start_square, 0ull);
+    uint64_t blockers = start_bitboard | end_bitboard;
+
+    uint64_t rook_moves = gen_rook_moves(start_square, blockers);
     if (rook_moves & end_bitboard) {
-        return rook_moves & gen_rook_moves(end_square, 0ull);
+        return rook_moves & gen_rook_moves(end_square, blockers);
     } else {
-        uint64_t bishop_moves = gen_bishop_moves(start_square, 0ull);
+        uint64_t bishop_moves = gen_bishop_moves(start_square, blockers);
         if (bishop_moves & end_bitboard) {
-            return bishop_moves & gen_bishop_moves(end_square, 0ull);
+            return bishop_moves & gen_bishop_moves(end_square, blockers);
         } else {
             return 0ull;
         }
