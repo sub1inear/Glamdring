@@ -188,10 +188,14 @@ public:
             board[square] = piece;
             bitboards[piece.color][piece.piece] |= 1ull << square;
         }
-        void clear_piece(square_t square, piece_color_t piece) {
-            board[square].piece = CLEAR;
+        void clear_piece_bitboard(square_t square, piece_color_t piece) {
             bitboards[piece.color][piece.piece] &= ~(1ull << square);
         }
+        void clear_piece(square_t square, piece_color_t piece) {
+            board[square].piece = CLEAR;
+            clear_piece_bitboard(square, piece);
+        }
+        
         void print();
         void clear();
         void load_fen(const char *fen);

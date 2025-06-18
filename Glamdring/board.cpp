@@ -157,7 +157,11 @@ void chess_t::board_t::undo_move(move_t move) {
     piece_color_t start_piece = get_piece(move.to);
 
     set_piece(move.from, start_piece);
+    clear_piece_bitboard(move.to, start_piece);
+
     set_piece(move.to, game_state->captured_piece);
+
+    
 
     game_state_stack.pop();
 }
