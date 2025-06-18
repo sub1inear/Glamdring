@@ -78,7 +78,6 @@ public:
     static void square_to_file_rank(square_t square, char *out);
     static void print_square(square_t square);
     static void print_bitboard(uint64_t bitboard);
-    int test();
 
     // TODO: use 1 byte
     class piece_color_t {
@@ -228,4 +227,8 @@ public:
     
     // precomp.cpp
     static void gen_precomp_data();
+
+    // test.cpp
+    uint32_t perft(uint32_t depth, bool root = true);
+    int32_t test();
 };

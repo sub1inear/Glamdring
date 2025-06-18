@@ -72,7 +72,3 @@ void chess_t::print_bitboard(uint64_t bitboard) {
     }
     std::cout << '\n';
 }
-
-int chess_t::test() {
-    return 0;
-}

@@ -19,7 +19,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     for (uint64_t moves_bitboard = single_move; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 8 : -8);
-        if (1ull << end_square & pin_lines[start_square]) {
+        if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
         if (end_square < 8) {
@@ -31,11 +31,13 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
         }
     }
     constexpr uint64_t rank_4 = 0xff00000000ull;
-    uint64_t double_move = (to_move == WHITE ? single_move >> 8 : single_move << 8) & ~blockers & rank_4 & legal;
+    constexpr uint64_t rank_5 = 0xff000000ull;
+    uint64_t double_move_rank = to_move == WHITE ? rank_4 : rank_5;
+    uint64_t double_move = (to_move == WHITE ? single_move >> 8 : single_move << 8) & ~blockers & double_move_rank & legal;
     for ( ; double_move; double_move = _blsr_u64(double_move)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(double_move);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 16 : -16);
-        if (1ull << end_square & pin_lines[start_square]) {
+        if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
         moves.add({start_square, end_square, move_t::DOUBLE_PAWN_PUSH});
@@ -47,7 +49,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE) ? 9 : -9;
-        if (1ull << end_square & pin_lines[start_square]) {
+        if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
         if (to_move == WHITE ? end_square < 8 : end_square > 55) {
@@ -62,7 +64,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
-        if (1ull << end_square & pin_lines[start_square]) {
+        if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
         if (to_move == WHITE ? end_square < 8 : end_square > 55) {
@@ -279,7 +281,7 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
     }
     for ( ; unpinned_allies; unpinned_allies = _blsr_u64(unpinned_allies)) {
         chess_t::square_t ally_square = (chess_t::square_t)_tzcnt_u64(unpinned_allies);
-        pin_lines[unpinned_allies] = 0xffffffffffffffffull;
+        pin_lines[ally_square] = 0xffffffffffffffffull;
     }
 }
 
