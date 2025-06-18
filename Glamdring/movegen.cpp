@@ -46,7 +46,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     constexpr uint64_t file_h = 0x8080808080808080ull;
 
     uint64_t capture_left_move = (to_move == WHITE ? (pawns & ~file_a) >> 9 : (pawns & ~file_h) << 9)  & legal;
-    for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
+    for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE) ? 9 : -9;
         if (1ull << end_square & ~pin_lines[start_square]) {
@@ -61,7 +61,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
         }
     }
     uint64_t capture_right_move = (to_move == WHITE ? (pawns & ~file_h) >> 7 : (pawns & ~file_a) << 7) & legal;
-    for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
+    for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
         if (1ull << end_square & ~pin_lines[start_square]) {
