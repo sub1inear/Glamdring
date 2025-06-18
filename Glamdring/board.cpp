@@ -98,12 +98,14 @@ void chess_t::board_t::load_fen(const char *fen) {
 
 void chess_t::board_t::make_move(move_t move) {
     game_state_t *old_game_state = game_state_stack.last();
+    // TODO: check if size is greater than max_ply
     game_state_t *new_game_state = game_state_stack.next();
     
     piece_color_t start_piece = get_piece(move.from);
     piece_color_t new_piece = start_piece;
     piece_color_t captured_piece = get_piece(move.to);
 
+    // TODO: inline this in the two places used to avoid branch prediction failure
     square_t new_en_passant = old_game_state->to_move == WHITE ? move.to + 8 : move.to - 8;
 
     if (move.is_promotion()) {
@@ -129,9 +131,8 @@ void chess_t::board_t::make_move(move_t move) {
     new_game_state->captured_piece = captured_piece;
 
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
-    if (move.is_castling()) {
-        memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
-        
+    
+    if (move.is_castling()) {        
         castling_side_t side = move.get_castling();
         
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
@@ -141,10 +142,12 @@ void chess_t::board_t::make_move(move_t move) {
         
         clear_piece(rook_start_square, rook);
         set_piece(rook_end_square, rook);
-    } else if (start_piece.piece == KING) {
+    }
+    if (start_piece.piece == KING) {
         // TODO: use & for branchless clear
         memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
     }
+
     if (start_piece.piece == ROOK) {
         if (move.from == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
             new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;    
@@ -162,16 +165,34 @@ void chess_t::board_t::make_move(move_t move) {
 }
 
 void chess_t::board_t::undo_move(move_t move) {
-    game_state_t *game_state = game_state_stack.last();
+    game_state_t *old_game_state = game_state_stack.last();
+    game_state_t *new_game_state = game_state_stack.pop();
 
     piece_color_t start_piece = get_piece(move.to);
 
     set_piece(move.from, start_piece);
-    clear_piece_bitboard(move.to, start_piece);
 
     if (move.is_capture()) {
-        set_piece(move.to, game_state->captured_piece);
+        if (move.flags == move_t::EN_PASSANT_CAPTURE) {
+            clear_piece(move.to, start_piece); 
+            set_piece(new_game_state->to_move == WHITE ? move.to + 8 : move.to - 8, old_game_state->captured_piece);
+        } else {
+            clear_piece_bitboard(move.to, start_piece);
+            set_piece(move.to, old_game_state->captured_piece);
+        }
+    } else {
+        clear_piece(move.to, start_piece);
     }
 
-    game_state_stack.pop();
+    if (move.is_castling()) {
+        castling_side_t side = move.get_castling();
+        
+        square_t rook_start_square = data::rook_castling_start_squares[new_game_state->to_move][side];
+        square_t rook_end_square = data::rook_castling_end_squares[new_game_state->to_move][side];
+    
+        piece_color_t rook = get_piece(rook_end_square);
+
+        clear_piece(rook_end_square, rook);
+        set_piece(rook_start_square, rook);
+    }
 }

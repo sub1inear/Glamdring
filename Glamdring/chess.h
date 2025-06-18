@@ -19,15 +19,16 @@ public:
     void add(T item) {
         data[size++] = item;
     }
-    void pop() {
-        size--;
-    }
     T *last() {
         return &data[size - 1];
     }
     T *next() {
         size++;
         return last();
+    }
+    T *pop() {
+        size--;
+        return last(); 
     }
     T &operator[](uint32_t idx) {
         return data[idx];
@@ -234,5 +235,5 @@ public:
 
     // test.cpp
     uint32_t perft(uint32_t depth, bool root = true);
-    int32_t test();
+    uint32_t test();
 };
