@@ -96,11 +96,6 @@ public:
         square_t square;
     };
 
-    struct attack_data_t {
-        uint64_t attackers;
-        uint64_t attack_mask;
-    };
-
     class move_t {
     public:
         /*
@@ -208,23 +203,27 @@ public:
     
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
-    void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t enemies, move_array_t &moves);
+    
+    void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves);
     uint64_t gen_pawn_attacks(color_t to_move, square_t square);
     uint64_t gen_knight_moves(square_t square, uint64_t allies);
     uint64_t gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies);
     uint64_t gen_rook_moves(square_t square, uint64_t blockers, uint64_t allies);
     uint64_t gen_queen_moves(square_t square, uint64_t blockers, uint64_t allies);
     uint64_t gen_king_moves(square_t square, uint64_t allies);
-    void gen_castling_moves(square_t square, uint64_t blockers, move_array_t &moves);
+    void gen_castling_moves(square_t square, uint64_t blockers, uint64_t danger, move_array_t &moves);
+
+    uint64_t gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square);
     uint64_t gen_blockers();
     uint64_t gen_allies();
-    // generates the attackers and the combined attackers + attack lines (attack mask) for a square
-    attack_data_t gen_attackers(square_t square, uint64_t blockers);
+    
+    // generates the attackers for a square
+    uint64_t gen_attackers(square_t square, uint64_t blockers);
     // "king danger" terminology from https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
     // generates all opponent's attacked squares (with the king removed to ensure it cannot go back out of check)
     uint64_t gen_king_danger_squares(uint64_t blockers);
-    // generates pins for a square
-    uint64_t gen_pins(square_t square, uint64_t danger, uint64_t allies, uint64_t enemies);
+    // generates all pin lines for a square
+    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, uint64_t allies, uint64_t enemies);
     move_array_t gen_moves();
     
     // precomp.cpp

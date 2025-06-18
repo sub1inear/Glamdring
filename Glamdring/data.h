@@ -12,9 +12,11 @@ extern const pext_t bishop_pext[];
 extern const uint64_t pext_move_data[];
 extern const uint64_t knight_move_data[];
 extern const uint64_t king_move_data[];
+extern const uint64_t sliding_between_data[][64];
 
 // static_data.cpp
-extern const uint64_t king_castling_data[][2];
+extern const uint64_t king_castling_clear[][2];
+extern const uint64_t king_castling_safe[][2];
 extern const chess_t::square_t king_castling_end_squares[][2];
 extern const chess_t::square_t rook_castling_start_squares[][2];
 extern const chess_t::square_t rook_castling_end_squares[][2];

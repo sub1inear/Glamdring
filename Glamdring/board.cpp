@@ -22,6 +22,11 @@ void chess_t::board_t::print() {
             }
         }
     }
+    
+    if (!game_state->castling_rights[WHITE][KINGSIDE] && !game_state->castling_rights[WHITE][QUEENSIDE] &&
+        !game_state->castling_rights[BLACK][KINGSIDE] && !game_state->castling_rights[BLACK][QUEENSIDE]) {
+        std::cout << "None";
+    }
     std::cout << "\nEn Passant:\n";
     if (game_state->en_passant == null_square) {
         std::cout << "None";
@@ -124,10 +129,14 @@ void chess_t::board_t::make_move(move_t move) {
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
     if (move.is_castling()) {
         memset(&new_game_state->castling_rights[old_game_state->to_move], false, sizeof(new_game_state->castling_rights[old_game_state->to_move]));
+        
         castling_side_t side = move.get_castling();
+        
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
         square_t rook_end_square = data::rook_castling_end_squares[old_game_state->to_move][side];
+
         piece_color_t rook = get_piece(rook_start_square);
+        
         clear_piece(rook_start_square, rook);
         set_piece(rook_end_square, rook);
     } else if (start_piece.piece == KING) {

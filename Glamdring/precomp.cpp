@@ -1,7 +1,7 @@
 #include "chess.h"
 #include "data.h"
 
-// heavily inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
+// precomp move generation inspired by https://www.talkchess.com/forum/viewtopic.php?topic_view=threads&p=175834&t=19699
 static uint64_t gen_rook_mask(chess_t::square_t square) {
     uint64_t mask = 0;
     chess_t::square_t file = square % 8;
@@ -215,9 +215,37 @@ static void print_pawn_attack_data(std::ofstream &fout) {
                 fout << gen_pawn_attacks((chess_t::color_t)color, square) << "ull, ";
             }
         }
-        fout << "\n    }, \n";
+        fout << "\n    },\n";
     }
 }
+static uint64_t gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square) {
+    uint64_t end_bitboard = 1ull << end_square;
+    uint64_t rook_moves = gen_rook_moves(start_square, 0ull);
+    if (rook_moves & end_bitboard) {
+        return rook_moves & gen_rook_moves(end_square, 0ull);
+    } else {
+        uint64_t bishop_moves = gen_bishop_moves(start_square, 0ull);
+        if (bishop_moves & end_bitboard) {
+            return bishop_moves & gen_bishop_moves(end_square, 0ull);
+        } else {
+            return 0ull;
+        }
+    }            
+}
+static void print_sliding_between_data(std::ofstream &fout) {
+    for (chess_t::square_t start_square = 0; start_square < 64; start_square++) {
+        fout << "    {";
+        for (uint32_t i = 0; i < 16; i++) {
+            fout << "\n    ";
+            for (uint32_t j = 0; j < 4; j++) {
+                chess_t::square_t end_square = i * 4 + j;
+                fout << gen_sliding_between(start_square, end_square) << "ull, ";
+            }
+        }
+        fout << "\n    },\n";
+    }
+}
+
 void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     std::ofstream fout("data.cpp");
@@ -241,7 +269,9 @@ void chess_t::gen_precomp_data() {
     fout << "};\n"
             "const uint64_t pawn_attack_data[][64] = {\n";
     print_pawn_attack_data(fout);
-
+    fout << "};\n"
+            "const uint64_t sliding_between_data[64][64] = {\n";
+    print_sliding_between_data(fout);
     fout << "};\n"
             "}";
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

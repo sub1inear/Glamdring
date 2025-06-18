@@ -10,123 +10,107 @@ inline void chess_t::serialize_bitboard(square_t square, uint64_t moves_bitboard
     }
 }
 
-void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t enemies, move_array_t &moves) {
-    if (board.game_state_stack.last()->to_move == WHITE) {
-        uint64_t single_move = pawns >> 8 & ~blockers;
-        for (uint64_t moves_bitboard = single_move; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square + 8;
-            if (end_square < 8) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION; f <= move_t::QUEEN_PROMOTION; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::QUIET});
+void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves) {
+    // TODO: template for speed
+    color_t to_move = board.game_state_stack.last()->to_move;
+    color_t other_to_move = (color_t)!to_move;
+
+    uint64_t single_move = (to_move == WHITE ? pawns >> 8 : pawns << 8) & ~blockers & legal;
+    for (uint64_t moves_bitboard = single_move; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
+        chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
+        chess_t::square_t start_square = end_square + (to_move == WHITE ? 8 : -8);
+        if (1ull << end_square & pin_lines[start_square]) {
+            continue;    
+        }
+        if (end_square < 8) {
+            for (uint32_t f = move_t::KNIGHT_PROMOTION; f <= move_t::QUEEN_PROMOTION; f++) {
+                moves.add({start_square, end_square, (move_t::move_flags_t)f});
+            }
+        } else {
+            moves.add({start_square, end_square, move_t::QUIET});
+        }
+    }
+    constexpr uint64_t rank_4 = 0xff00000000ull;
+    uint64_t double_move = (to_move == WHITE ? single_move >> 8 : single_move << 8) & ~blockers & rank_4 & legal;
+    for ( ; double_move; double_move = _blsr_u64(double_move)) {
+        chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(double_move);
+        chess_t::square_t start_square = end_square + (to_move == WHITE ? 16 : -16);
+        if (1ull << end_square & pin_lines[start_square]) {
+            continue;    
+        }
+        moves.add({start_square, end_square, move_t::DOUBLE_PAWN_PUSH});
+    }
+    constexpr uint64_t file_a = 0x101010101010101ull;
+    constexpr uint64_t file_h = 0x8080808080808080ull;
+
+    uint64_t capture_left_move = (to_move == WHITE ? (pawns & ~file_a) >> 9 : (pawns & ~file_h) << 9)  & legal;
+    for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
+        chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
+        chess_t::square_t start_square = end_square + (to_move == WHITE) ? 9 : -9;
+        if (1ull << end_square & pin_lines[start_square]) {
+            continue;    
+        }
+        if (to_move == WHITE ? end_square < 8 : end_square > 55) {
+            for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
+                moves.add({start_square, end_square, (move_t::move_flags_t)f});
+            }
+        } else {
+            moves.add({start_square, end_square, move_t::CAPTURE});
+        }
+    }
+    uint64_t capture_right_move = (to_move == WHITE ? (pawns & ~file_h) >> 7 : (pawns & ~file_a) << 7) & legal;
+    for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
+        chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
+        chess_t::square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
+        if (1ull << end_square & pin_lines[start_square]) {
+            continue;    
+        }
+        if (to_move == WHITE ? end_square < 8 : end_square > 55) {
+            for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
+                moves.add({start_square, end_square, (move_t::move_flags_t)f});
+            }
+        } else {
+            moves.add({start_square, end_square, move_t::CAPTURE});
+        }
+    }
+    chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
+    if (en_passant != null_square) {
+        // check if en passant is pinned
+        // skip if more than one ally on rank
+        constexpr uint64_t rank_6 = 0xff0000ull;
+        constexpr uint64_t rank_3 = 0xff0000000000ull;
+        // TODO: make constexpr
+        uint64_t en_passant_rank = (to_move == WHITE ? rank_6 : rank_3);
+        if (_mm_popcnt_u64(allies & en_passant_rank) == 1) {
+            blockers &= ~(1ull << (en_passant + (to_move == WHITE ? 8 : -8)));
+            blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_rank);
+            uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
+            chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rook_queen & en_passant_rank);
+            if (gen_rook_moves(rook_square, blockers, 0ull) & (board.bitboards[WHITE][KING] & en_passant_rank)) {
+                return; // en passant is pinned, skip
             }
         }
-        constexpr uint64_t rank_4 = 0xff00000000;
-        uint64_t double_move = single_move >> 8 & ~blockers & rank_4;
-        for ( ; double_move; double_move = _blsr_u64(double_move)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(double_move);
-            chess_t::square_t start_square = end_square + 16;
-            moves.add({start_square, end_square, move_t::DOUBLE_PAWN_PUSH});
-        }
-        constexpr uint64_t file_a = 0x101010101010101;
-        uint64_t capture_left_move = (pawns & ~file_a) >> 9;
-        for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square + 9;
-            if (end_square < 8) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::CAPTURE});
-            }
-        }
-        constexpr uint64_t file_h = 0x8080808080808080;
-        uint64_t capture_right_move = (pawns & ~file_h) >> 7;
-        for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square + 7;
-            if (end_square < 8) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::CAPTURE});
-            }
-        }
-        chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
-        if (en_passant != null_square) {
-            uint64_t en_passant_bitboard = 1ull << en_passant;
-            if (capture_left_move & en_passant_bitboard) {
-                chess_t::square_t start_square = en_passant + 9;
-                moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
-            }
-            if (capture_right_move & en_passant_bitboard) {
-                chess_t::square_t start_square = en_passant + 7;
-                moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
-            }
-        }
-    } else {
-        uint64_t single_move = pawns << 8 & ~blockers;
-        for (uint64_t moves_bitboard = single_move; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square - 8;
-            if (end_square > 55) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION; f <= move_t::QUEEN_PROMOTION; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::QUIET});
-            }
-        }
-        constexpr uint64_t rank_5 = 0xff000000;
-        uint64_t double_move = single_move << 8 & ~blockers & rank_5;
-        for ( ; double_move; double_move = _blsr_u64(double_move)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(double_move);
-            chess_t::square_t start_square = end_square - 16;
-            moves.add({start_square, end_square, move_t::DOUBLE_PAWN_PUSH});
-        }
-        constexpr uint64_t file_h = 0x8080808080808080;
-        uint64_t capture_left_move = (pawns & ~file_h) << 9;
-        for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _tzcnt_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square - 9;
-            if (end_square > 55) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::CAPTURE});
-            }
-        }
-        constexpr uint64_t file_a = 0x101010101010101;
-        uint64_t capture_right_move = (pawns & ~file_a) << 7;
-        for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
-            chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
-            chess_t::square_t start_square = end_square - 7;
-            if (end_square > 55) {
-                for (uint32_t f = move_t::KNIGHT_PROMOTION_CAPTURE; f <= move_t::QUEEN_PROMOTION_CAPTURE; f++) {
-                    moves.add({start_square, end_square, (move_t::move_flags_t)f});
-                }
-            } else {
-                moves.add({start_square, end_square, move_t::CAPTURE});
-            }
-        }
-        chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
-        if (en_passant != null_square) {
-            uint64_t en_passant_bitboard = 1ull << en_passant;
-            if (capture_left_move & en_passant_bitboard) {
-                chess_t::square_t start_square = en_passant - 9;
-                moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
-            }
-            if (capture_right_move & en_passant_bitboard) {
-                chess_t::square_t start_square = en_passant - 7;
+
+        uint64_t en_passant_bitboard = 1ull << en_passant;
+
+        // make capturing pawn end square legal if en passant square is legal
+        // en passant is the only move where a piece can get captured without the capturing piece being on that square
+
+        legal |= to_move == WHITE ? (legal & en_passant_bitboard) >> 8 : (legal & en_passant_bitboard) << 8;
+
+        if (capture_left_move & en_passant_bitboard) {
+            chess_t::square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
+            if (1ull << en_passant & legal & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
             }
         }
+        if (capture_right_move & en_passant_bitboard) {
+            chess_t::square_t start_square = to_move == WHITE ? en_passant + 7 : en_passant - 7;
+            if (1ull << en_passant & legal & pin_lines[start_square]) {
+                moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
+            }
+        }
+
     }
 }
 uint64_t chess_t::gen_pawn_attacks(color_t to_move, square_t square) {
@@ -168,15 +152,17 @@ uint64_t chess_t::gen_king_moves(square_t square, uint64_t allies) {
     return moves_bitboard;
 };
 
-void chess_t::gen_castling_moves(square_t square, uint64_t blockers, move_array_t &moves) {
+void chess_t::gen_castling_moves(square_t square, uint64_t blockers, uint64_t danger, move_array_t &moves) {
     color_t to_move = board.game_state_stack.last()->to_move;
-    if (!(blockers & data::king_castling_data[to_move][KINGSIDE]) &&
-        board.game_state_stack.last()->castling_rights[to_move][KINGSIDE]) {
-        moves.add({ square, data::king_castling_end_squares[to_move][KINGSIDE], move_t::KING_CASTLE }); 
+    if (!(blockers & data::king_castling_clear[to_move][KINGSIDE]) &&
+        board.game_state_stack.last()->castling_rights[to_move][KINGSIDE] &&
+        !(danger & data::king_castling_safe[to_move][KINGSIDE])) {
+        moves.add({square, data::king_castling_end_squares[to_move][KINGSIDE], move_t::KING_CASTLE}); 
     }
-    if (!(blockers & data::king_castling_data[to_move][QUEENSIDE]) &&
-        board.game_state_stack.last()->castling_rights[to_move][QUEENSIDE]) {
-        moves.add({ square, data::king_castling_end_squares[to_move][QUEENSIDE], move_t::QUEEN_CASTLE }); 
+    if (!(blockers & data::king_castling_clear[to_move][QUEENSIDE]) &&
+        board.game_state_stack.last()->castling_rights[to_move][QUEENSIDE] &&
+        !(danger & data::king_castling_safe[to_move][QUEENSIDE])) {
+        moves.add({square, data::king_castling_end_squares[to_move][QUEENSIDE], move_t::QUEEN_CASTLE}); 
     }
 }
 
@@ -191,55 +177,35 @@ uint64_t chess_t::gen_allies() {
     return board.bitboards[to_move][PAWN] | board.bitboards[to_move][KNIGHT] | board.bitboards[to_move][BISHOP] | board.bitboards[to_move][ROOK] | board.bitboards[to_move][QUEEN] | board.bitboards[to_move][KING];
 }
 
-chess_t::attack_data_t chess_t::gen_attackers(square_t square, uint64_t blockers) {
+uint64_t chess_t::gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square) {
+    return data::sliding_between_data[start_square][end_square];
+}
+
+uint64_t chess_t::gen_attackers(square_t square, uint64_t blockers) {
     color_t to_move = board.game_state_stack.last()->to_move;
     color_t other_to_move = (color_t)!to_move;
-    uint64_t attackers = 0;
-    uint64_t attacking = 0;
-    // generate moves attacking square by anding moves from square and moves to square
-    // enemy's allies unused  as only taking moves that intersect with enemy
+    uint64_t attackers = 0ull;
+    // enemy's allies unused as only taking moves that intersect with enemy
     attackers |= gen_pawn_attacks(to_move, square) & board.bitboards[other_to_move][PAWN];
     attackers |= gen_knight_moves(square, 0ull) & board.bitboards[other_to_move][KNIGHT];
     
-    uint64_t bishop_moves_from_square = gen_bishop_moves(square, blockers, 0ull);
-    uint64_t bishop_attackers = bishop_moves_from_square & board.bitboards[other_to_move][BISHOP];
-    attackers |= bishop_attackers;
-    
-    for ( ; bishop_attackers; bishop_attackers = _blsr_u64(bishop_attackers)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishop_attackers);
-        attacking |= gen_bishop_moves(bishop_square, blockers, 0ull) & bishop_moves_from_square;
-    }
-    
-    uint64_t rook_moves_from_square = gen_rook_moves(square, blockers, 0ull);
-    uint64_t rook_attackers = rook_moves_from_square & board.bitboards[other_to_move][ROOK];
-    attackers |= rook_attackers;
-    
-    for ( ; rook_attackers; rook_attackers = _blsr_u64(rook_attackers)) {
-        chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rook_attackers);
-        attacking |= gen_rook_moves(rook_square, blockers, 0ull) & rook_moves_from_square;
-    }
+    uint64_t bishop_queen = board.bitboards[other_to_move][BISHOP] | board.bitboards[other_to_move][QUEEN];
+    uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
 
-    uint64_t queen_moves_from_square = bishop_moves_from_square | rook_moves_from_square;
-    uint64_t queen_attackers = queen_moves_from_square & board.bitboards[other_to_move][QUEEN];
-    attackers |= queen_attackers;
-    
-    for ( ; queen_attackers; queen_attackers = _blsr_u64(queen_attackers)) {
-        chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queen_attackers);
-        attacking |= gen_queen_moves(queen_square, blockers, 0ull) & queen_moves_from_square;
-    }
-
+    attackers |= gen_bishop_moves(square, blockers, 0ull) & bishop_queen;
+    attackers |= gen_rook_moves(square, blockers, 0ull) & rook_queen;
     attackers |= gen_king_moves(square, 0ull) & board.bitboards[other_to_move][KING];
-    return { attackers, attackers | attacking };
+    return attackers;
 }
 
 uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
-    uint64_t attacked = 0;
+    uint64_t attacked = 0ull;
     color_t to_move = board.game_state_stack.last()->to_move;
     color_t other_to_move = (color_t)!to_move;
 
     // xray through king (bitboard must ensure king can't move backward out of check)
     uint64_t king_bitboard = board.bitboards[to_move][KING];
-    board.bitboards[to_move][KING] = 0;
+    board.bitboards[to_move][KING] = 0ull;
 
     // assumes one king
     {
@@ -270,11 +236,51 @@ uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
     return attacked;
 }
 
-uint64_t chess_t::gen_pins(square_t square, uint64_t danger, uint64_t allies, uint64_t enemies) {
-    allies &= ~danger;
-    uint64_t blockers = allies | enemies;
-    print_bitboard(blockers);
-    return gen_attackers(square, blockers).attack_mask;
+void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, uint64_t allies, uint64_t enemies) {    
+    memset(pin_lines, 0, 64 * sizeof(uint64_t));
+    
+    color_t to_move = board.game_state_stack.last()->to_move;
+    color_t other_to_move = (color_t)!to_move;
+
+    uint64_t safe_allies = allies & ~danger;
+    uint64_t blockers = safe_allies | enemies;
+    
+    uint64_t unpinned_allies = allies;
+
+    uint64_t bishop_queen = board.bitboards[other_to_move][BISHOP] | board.bitboards[other_to_move][QUEEN];
+    uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
+
+    uint64_t bishop_moves_from_square = gen_bishop_moves(square, blockers, 0ull);
+    uint64_t bishop_queen_attackers = bishop_moves_from_square & bishop_queen;
+
+    for ( ; bishop_queen_attackers; bishop_queen_attackers = _blsr_u64(bishop_queen_attackers)) {
+        chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishop_queen_attackers);
+        uint64_t pin = gen_bishop_moves(bishop_square, blockers, 0ull) & bishop_moves_from_square;
+        pin |= bishop_queen_attackers;
+
+        uint64_t pinned = pin & allies;
+        unpinned_allies &= ~pinned;
+        chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
+        pin_lines[pinned_square] |= pin;
+    }
+    
+    uint64_t rook_moves_from_square = gen_rook_moves(square, blockers, 0ull);
+    uint64_t rook_queen_attackers = rook_moves_from_square & rook_queen;
+    
+    for ( ; rook_queen_attackers; rook_queen_attackers = _blsr_u64(rook_queen_attackers)) {
+        chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rook_queen_attackers);
+        uint64_t pin = gen_rook_moves(rook_square, blockers, 0ull) & rook_moves_from_square;
+        pin |= rook_queen_attackers;
+
+        uint64_t pinned = pin & allies;
+        unpinned_allies &= ~pinned;
+        chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
+        pin_lines[pinned_square] |= pin;
+    }
+    for ( ; unpinned_allies; unpinned_allies = _blsr_u64(unpinned_allies)) {
+        chess_t::square_t ally_square = (chess_t::square_t)_tzcnt_u64(unpinned_allies);
+        pin_lines[unpinned_allies] = 0xffffffffffffffffull;
+    }
 }
 
 chess_t::move_array_t chess_t::gen_moves() {
@@ -288,37 +294,64 @@ chess_t::move_array_t chess_t::gen_moves() {
 
     chess_t::square_t king_square = (chess_t::square_t)_tzcnt_u64(board.bitboards[to_move][KING]);
 
-    attack_data_t check_data = gen_attackers(king_square, blockers);
-    uint32_t num_checkers = (uint32_t)_mm_popcnt_u64(check_data.attackers);
+    uint64_t checkers = gen_attackers(king_square, blockers);
+    uint32_t num_checkers = (uint32_t)_mm_popcnt_u64(checkers);
     uint64_t danger = gen_king_danger_squares(blockers);
-    uint64_t pins = gen_pins(king_square, danger, allies, enemies);
 
     // assumes one king
     {
         uint64_t moves_bitboard = gen_king_moves(king_square, allies);
+        moves_bitboard &= ~danger;
         serialize_bitboard(king_square, moves_bitboard, enemies, moves);
-        gen_castling_moves(king_square, blockers, moves);
+        // only king moves allowed when in double check
+        if (num_checkers > 2) {
+            return moves;
+        }
+        gen_castling_moves(king_square, blockers, danger, moves);
     }
 
-    gen_pawn_moves(board.bitboards[to_move][PAWN], blockers, enemies, moves);
+    uint64_t pin_lines[64];
+    gen_pins(pin_lines, king_square, danger, allies, enemies);
+    
+    uint64_t legal = 0xffffffffffffffffull;
+    if (num_checkers == 1) {
+        // inspired by https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
+        chess_t::square_t checking_square = (chess_t::square_t)_tzcnt_u64(checkers);
+        switch (board.get_piece(checking_square)) {
+        case BISHOP:
+        case ROOK:
+        case QUEEN:
+            legal = gen_sliding_between(king_square, checking_square);
+            legal |= checkers;
+            break;
+        default:
+            break;
+        }
+    }
+
+    gen_pawn_moves(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights = _blsr_u64(knights)) {
+        uint64_t knight = _blsi_u64(knights);
         chess_t::square_t knight_square = (chess_t::square_t)_tzcnt_u64(knights);
-        uint64_t moves_bitboard = gen_knight_moves(knight_square, allies);
+        uint64_t moves_bitboard = gen_knight_moves(knight_square, allies) & legal & pin_lines[knight_square];
         serialize_bitboard(knight_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t bishops = board.bitboards[to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
+        uint64_t bishop = _blsi_u64(bishops);
         chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
-        uint64_t moves_bitboard = gen_bishop_moves(bishop_square, blockers, allies);
+        uint64_t moves_bitboard = gen_bishop_moves(bishop_square, blockers, allies) & legal & pin_lines[bishop_square];
         serialize_bitboard(bishop_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t rooks = board.bitboards[to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
+        uint64_t rook = _blsi_u64(rooks);
         chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
-        uint64_t moves_bitboard = gen_rook_moves(rook_square, blockers, allies);
+        uint64_t moves_bitboard = gen_rook_moves(rook_square, blockers, allies) & legal & pin_lines[rook_square];
         serialize_bitboard(rook_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t queens = board.bitboards[to_move][QUEEN]; queens; queens = _blsr_u64(queens)) {
+        uint64_t queen = _blsi_u64(queens);
         chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
-        uint64_t moves_bitboard = gen_queen_moves(queen_square, blockers, allies);
+        uint64_t moves_bitboard = gen_queen_moves(queen_square, blockers, allies) & legal & pin_lines[queen_square];
         serialize_bitboard(queen_square, moves_bitboard, enemies, moves);
     }
     return moves;
