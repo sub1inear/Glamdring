@@ -349,25 +349,21 @@ chess_t::move_array_t chess_t::gen_moves() {
         gen_pawn_moves<BLACK>(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);    
     }
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights = _blsr_u64(knights)) {
-        uint64_t knight = _blsi_u64(knights);
         chess_t::square_t knight_square = (chess_t::square_t)_tzcnt_u64(knights);
         uint64_t moves_bitboard = gen_knight_moves(knight_square, allies) & legal & pin_lines[knight_square];
         serialize_bitboard(knight_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t bishops = board.bitboards[to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
-        uint64_t bishop = _blsi_u64(bishops);
         chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
         uint64_t moves_bitboard = gen_bishop_moves(bishop_square, blockers, allies) & legal & pin_lines[bishop_square];
         serialize_bitboard(bishop_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t rooks = board.bitboards[to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
-        uint64_t rook = _blsi_u64(rooks);
         chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
         uint64_t moves_bitboard = gen_rook_moves(rook_square, blockers, allies) & legal & pin_lines[rook_square];
         serialize_bitboard(rook_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t queens = board.bitboards[to_move][QUEEN]; queens; queens = _blsr_u64(queens)) {
-        uint64_t queen = _blsi_u64(queens);
         chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
         uint64_t moves_bitboard = gen_queen_moves(queen_square, blockers, allies) & legal & pin_lines[queen_square];
         serialize_bitboard(queen_square, moves_bitboard, enemies, moves);
