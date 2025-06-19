@@ -26,8 +26,8 @@ uint32_t chess_t::test() {
     std::cout << "Nodes: " << perft_result << '\n';
     // board.print();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::duration time = end - start;
+    std::chrono::duration<float> time = end - start;
     std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(time).count() << " ms\n";
-    std::cout << "NPS: " << perft_result / std::chrono::duration_cast<std::chrono::seconds>(time).count() << '\n';
+    std::cout << "NPS: " << std::fixed<< (uint32_t)(perft_result / time.count()) << std::scientific << '\n';
     return 0;
 }
