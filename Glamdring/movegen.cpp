@@ -45,8 +45,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     constexpr uint64_t file_a = 0x101010101010101ull;
     constexpr uint64_t file_h = 0x8080808080808080ull;
 
-    uint64_t capture_left_move = (to_move == WHITE ? (pawns & ~file_a) >> 9 : (pawns & ~file_h) << 9)  & legal;
-    for (uint64_t moves_bitboard = capture_left_move & enemies; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
+    uint64_t capture_left_move = (to_move == WHITE ? (pawns & ~file_a) >> 9 : (pawns & ~file_h) << 9);
+    for (uint64_t moves_bitboard = capture_left_move & enemies & legal; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 9 : -9);
         if (1ull << end_square & ~pin_lines[start_square]) {
@@ -60,8 +60,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
             moves.add({start_square, end_square, move_t::CAPTURE});
         }
     }
-    uint64_t capture_right_move = (to_move == WHITE ? (pawns & ~file_h) >> 7 : (pawns & ~file_a) << 7) & legal;
-    for (uint64_t moves_bitboard = capture_right_move & enemies; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
+    uint64_t capture_right_move = (to_move == WHITE ? (pawns & ~file_h) >> 7 : (pawns & ~file_a) << 7);
+    for (uint64_t moves_bitboard = capture_right_move & enemies & legal; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(moves_bitboard);
         chess_t::square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
         if (1ull << end_square & ~pin_lines[start_square]) {
@@ -78,30 +78,30 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
     if (en_passant != null_square) {
         // check if en passant is pinned
-        // skip if more than one ally on rank
-        constexpr uint64_t rank_6 = 0xff0000ull;
-        constexpr uint64_t rank_3 = 0xff0000000000ull;
+        // skip if more than one allied pawn on rank
         // TODO: make constexpr
-        uint64_t en_passant_rank = (to_move == WHITE ? rank_6 : rank_3);
-        if (_mm_popcnt_u64(allies & en_passant_rank) == 1) {
-            blockers &= ~(1ull << (en_passant + (to_move == WHITE ? 8 : -8)));
-            blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_rank);
+        uint64_t en_passant_bitboard = 1ull << en_passant;
+        uint64_t capture_bitboard = 1ull << (en_passant + (to_move == WHITE ? 8 : -8));
+
+        uint64_t en_passant_start_rank = (to_move == WHITE ? rank_5 : rank_4);
+        if (_mm_popcnt_u64(board.bitboards[to_move][PAWN] & en_passant_start_rank) == 1) {
+            blockers &= ~capture_bitboard;
+            blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_start_rank);
             uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
-            uint64_t pinner = rook_queen & en_passant_rank;
+            uint64_t pinner = rook_queen & en_passant_start_rank;
             if (pinner) {
                 chess_t::square_t pinner_square = (chess_t::square_t)_tzcnt_u64(pinner);
-                if (gen_rook_moves(pinner_square, blockers, 0ull) & (board.bitboards[WHITE][KING] & en_passant_rank)) {
+                if (gen_rook_moves(pinner_square, blockers, 0ull) & (board.bitboards[to_move][KING] & en_passant_start_rank)) {
                     return; // en passant is pinned, skip
                 }
             }
         }
 
-        uint64_t en_passant_bitboard = 1ull << en_passant;
 
         // make capturing pawn end square legal if en passant square is legal
         // en passant is the only move where a piece can get captured without the capturing piece being on that square
 
-        legal |= to_move == WHITE ? (legal & en_passant_bitboard) >> 8 : (legal & en_passant_bitboard) << 8;
+        legal |= to_move == WHITE ? (legal & capture_bitboard) >> 8 : (legal & capture_bitboard) << 8;
 
         if (capture_left_move & en_passant_bitboard & legal ) {
             chess_t::square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
@@ -245,10 +245,20 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
     color_t to_move = board.game_state_stack.last()->to_move;
     color_t other_to_move = (color_t)!to_move;
 
-    uint64_t safe_allies = allies & ~danger;
-    uint64_t blockers = safe_allies | enemies;
-    
-    uint64_t unpinned_allies = allies;
+    uint64_t unpinned_allies = allies; 
+
+    for (uint64_t attacked_allies = allies & danger; attacked_allies; attacked_allies = _blsr_u64(attacked_allies)) {
+        uint64_t attacked_ally = _blsi_u64(attacked_allies);
+        uint64_t safe_allies = allies & ~attacked_ally;
+        uint64_t blockers = safe_allies | enemies;
+        uint64_t checkers = gen_attackers(square, blockers);
+        // TODO: branchless
+        if (_mm_popcnt_u64(checkers)) {
+            unpinned_allies &= ~attacked_ally;
+        }
+    }
+
+    uint64_t blockers = unpinned_allies | enemies;
 
     uint64_t bishop_queen = board.bitboards[other_to_move][BISHOP] | board.bitboards[other_to_move][QUEEN];
     uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
@@ -262,7 +272,6 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
         pin |= bishop_queen_attackers;
 
         uint64_t pinned = pin & allies;
-        unpinned_allies &= ~pinned;
         chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
         pin_lines[pinned_square] |= pin;
     }
@@ -276,7 +285,6 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
         pin |= rook_queen_attackers;
 
         uint64_t pinned = pin & allies;
-        unpinned_allies &= ~pinned;
         chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
         pin_lines[pinned_square] |= pin;
     }
