@@ -22,9 +22,12 @@ uint32_t chess_t::perft(uint32_t depth, bool root) {
 uint32_t chess_t::test() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     board.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    std::cout << perft(6) << '\n';
+    uint32_t perft_result = perft(6);
+    std::cout << "Nodes: " << perft_result << '\n';
     // board.print();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+    std::chrono::steady_clock::duration time = end - start;
+    std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(time).count() << " ms\n";
+    std::cout << "NPS: " << perft_result / std::chrono::duration_cast<std::chrono::seconds>(time).count() << '\n';
     return 0;
 }

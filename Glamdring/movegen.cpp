@@ -10,10 +10,9 @@ inline void chess_t::serialize_bitboard(square_t square, uint64_t moves_bitboard
     }
 }
 
+template <chess_t::color_t to_move> 
 void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves) {
-    // TODO: template for speed
-    color_t to_move = board.game_state_stack.last()->to_move;
-    color_t other_to_move = (color_t)!to_move;
+    constexpr color_t other_to_move = (color_t)!to_move;
 
     uint64_t single_move = (to_move == WHITE ? pawns >> 8 : pawns << 8) & ~blockers;
     for (uint64_t moves_bitboard = single_move & legal; moves_bitboard; moves_bitboard = _blsr_u64(moves_bitboard)) {
@@ -32,7 +31,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     }
     constexpr uint64_t rank_4 = 0xff00000000ull;
     constexpr uint64_t rank_5 = 0xff000000ull;
-    uint64_t double_move_rank = to_move == WHITE ? rank_4 : rank_5;
+    constexpr uint64_t double_move_rank = to_move == WHITE ? rank_4 : rank_5;
     uint64_t double_move = (to_move == WHITE ? single_move >> 8 : single_move << 8) & ~blockers & double_move_rank & legal;
     for ( ; double_move; double_move = _blsr_u64(double_move)) {
         chess_t::square_t end_square = (chess_t::square_t)_tzcnt_u64(double_move);
@@ -79,11 +78,10 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     if (en_passant != null_square) {
         // check if en passant is pinned
         // skip if more than one allied pawn on rank
-        // TODO: make constexpr
         uint64_t en_passant_bitboard = 1ull << en_passant;
         uint64_t capture_bitboard = 1ull << (en_passant + (to_move == WHITE ? 8 : -8));
 
-        uint64_t en_passant_start_rank = (to_move == WHITE ? rank_5 : rank_4);
+        constexpr uint64_t en_passant_start_rank = to_move == WHITE ? rank_5 : rank_4;
         if (_mm_popcnt_u64(board.bitboards[to_move][PAWN] & en_passant_start_rank) == 1) {
             blockers &= ~capture_bitboard;
             blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_start_rank);
@@ -345,7 +343,11 @@ chess_t::move_array_t chess_t::gen_moves() {
     }
 
 
-    gen_pawn_moves(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);
+    if (to_move == WHITE) {
+        gen_pawn_moves<WHITE>(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);
+    } else {
+        gen_pawn_moves<BLACK>(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);    
+    }
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights = _blsr_u64(knights)) {
         uint64_t knight = _blsi_u64(knights);
         chess_t::square_t knight_square = (chess_t::square_t)_tzcnt_u64(knights);
