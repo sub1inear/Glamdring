@@ -1,11 +1,11 @@
 #include "chess.h"
 
 uint32_t chess_t::perft(uint32_t depth, bool root) {
-    if (depth == 0) {
-        return 1;
-    }
     uint32_t num_moves = 0;
     move_array_t moves = gen_moves();
+    if (depth == 1) {
+        return moves.size;
+    }
     for (uint32_t i = 0; i < moves.size; i++) {
         board.make_move(moves[i]);
         uint32_t new_moves = perft(depth - 1, false);
@@ -32,13 +32,12 @@ uint32_t chess_t::test() {
         119060324,
         3195901860,
     };
-    for (uint32_t i = 0; i < 4; i++) {
+    for (uint32_t i = 0; i < 7; i++) {
         std::cout << "Perft " << i + 1 << '\n';
         uint32_t perft_result = perft(i + 1);
         std::cout << "Nodes: " << perft_result << '\n';
         std::cout << "Expected Nodes: " << perft_results[i] << '\n';
         std::cout << (perft_result == perft_results[i] ? "Succeeded\n\n" : "Failed\n\n");
-        // board.print();
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<float> time = end - start;
         std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(time).count() << " ms\n";

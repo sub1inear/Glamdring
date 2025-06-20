@@ -266,6 +266,7 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, ui
     
     // remove pieces attacked in line with king
     uint64_t pinning_danger = gen_pinning_danger(square);
+    uint64_t pinned_allies = allies & pinning_danger;
     uint64_t unpinned_blockers = allies & ~pinning_danger | enemies;
 
     // comine bishop/rook and queen to avoid extra queen loop
@@ -280,8 +281,8 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, ui
         uint64_t pin = gen_bishop_moves(bishop_square, unpinned_blockers, 0ull) & bishop_moves_from_square;
         pin |= bishop_queen_attackers;
 
-        uint64_t pinned = pin & allies;
-        if (pinned) {
+        uint64_t pinned = pin & pinned_allies;
+        if (_mm_popcnt_u64(pinned) == 1) {
             chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
             pin_lines[pinned_square] = pin;
         }
@@ -295,8 +296,8 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, ui
         uint64_t pin = gen_rook_moves(rook_square, unpinned_blockers, 0ull) & rook_moves_from_square;
         pin |= rook_queen_attackers;
 
-        uint64_t pinned = pin & allies;
-        if (pinned) {
+        uint64_t pinned = pin & pinned_allies;
+        if (_mm_popcnt_u64(pinned) == 1) {
             chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
             // if queen, pin_lines is already set so | is necessary
             if (pin_lines[pinned_square] == 0xffffffffffffffffull) {
