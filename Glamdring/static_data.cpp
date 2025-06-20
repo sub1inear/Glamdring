@@ -21,4 +21,32 @@ const chess_t::square_t rook_castling_end_squares[][2] = {
     { chess_t::F1, chess_t::D1 },
     { chess_t::F8, chess_t::D8 },
 };
+const perft_result_t perft_results[] = {
+    {
+        "Startpos",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        {
+            20,
+            400,
+            8902,
+            197281,
+            4865609,
+            119060324,
+            3195901860,
+        },
+    },
+    {
+        "Kiwipete",
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        {
+            48,
+            2039,
+            97862,
+            4085603,
+            193690690,
+            8031647685,
+            374190009323,
+        },
+    },
+};
 }

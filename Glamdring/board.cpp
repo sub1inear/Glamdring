@@ -4,14 +4,14 @@
 void chess_t::board_t::print() {
     game_state_t *game_state = game_state_stack.last();
     for (uint32_t i = 0; i < 8; i++) {
-        std::cout << "\x1b[38;5;240m" <<  (char)('8' - i) << " \033[0m";
+        std::cout << "\x1b[38;5;240m" <<  (char)('8' - i) << " \x1b[0m";
         for (uint32_t j = 0; j < 8; j++) {
             chess_t::square_t square = i * 8 + j;
             std::cout << (char)get_piece(square) << ' ';
         }
         std::cout << '\n';
     }
-    std::cout << "\x1b[38;5;240m  a b c d e f g h\033[0m\nTo Move:\n";
+    std::cout << "\x1b[38;5;240m  a b c d e f g h\x1b[0m\nTo Move:\n";
     std::cout << (game_state->to_move == WHITE ? "White" : "Black");
     std::cout << "\nCastling:\n";
     static constexpr char castling_names[2][2] = { { 'K', 'Q' }, { 'k', 'q' } };

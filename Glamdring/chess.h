@@ -235,6 +235,6 @@ public:
     static void gen_precomp_data();
 
     // test.cpp
-    uint32_t perft(uint32_t depth, bool root = true);
+    uint64_t perft(uint32_t depth, bool root = true);
     uint32_t test();
 };
