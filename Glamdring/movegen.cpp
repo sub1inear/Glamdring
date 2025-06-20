@@ -237,51 +237,38 @@ uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
     return danger;
 }
 
-void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, uint64_t blockers, uint64_t allies, uint64_t enemies) {    
-    memset(pin_lines, 0, 64 * sizeof(uint64_t));
-    
+uint64_t chess_t::gen_pinning_danger(chess_t::square_t square) {
     color_t to_move = board.game_state_stack.last()->to_move;
     color_t other_to_move = (color_t)!to_move;
 
-    uint64_t unpinned_allies = allies;
-
-    {
-        uint64_t bishop_danger = 0ull;
-        uint64_t rook_danger = 0ull;
-        uint64_t queen_danger = 0ull;
-
-        for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
-            chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
-            bishop_danger |= gen_bishop_moves(bishop_square, blockers, 0ull);
-        }
-        for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
-            chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
-            rook_danger |= gen_rook_moves(rook_square, blockers, 0ull);
-        }
-        for (uint64_t queens = board.bitboards[other_to_move][QUEEN]; queens; queens = _blsr_u64(queens)) {
-            chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
-            queen_danger |= gen_queen_moves(queen_square, blockers, 0ull);
-        }
-
-        uint64_t bishop_moves_from_square = gen_bishop_moves(square, blockers, 0ull);
-        uint64_t rook_moves_from_square = gen_rook_moves(square, blockers, 0ull);
-        uint64_t queen_moves_from_square = bishop_moves_from_square | rook_moves_from_square;
-
-        uint64_t bishop_pin_line = bishop_moves_from_square & bishop_danger;
-        uint64_t rook_pin_line = rook_moves_from_square & rook_danger;
-        uint64_t queen_pin_line = queen_moves_from_square & queen_danger;
-
-        for (uint64_t attacked_allies = allies & danger; attacked_allies; attacked_allies = _blsr_u64(attacked_allies)) {
-            uint64_t attacked_ally = _blsi_u64(attacked_allies);
-            if (bishop_pin_line & attacked_ally || rook_pin_line & attacked_ally || queen_pin_line & attacked_ally) {
-                unpinned_allies &= ~attacked_ally;
-            }
-        }
+    uint64_t pinning_danger = 0ull;
+    for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
+        chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
+        pinning_danger |= gen_sliding_between(bishop_square, square);
     }
+    for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
+        chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
+        pinning_danger |= gen_sliding_between(rook_square, square);
+    }
+    for (uint64_t queens = board.bitboards[other_to_move][QUEEN]; queens; queens = _blsr_u64(queens)) {
+        chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
+        pinning_danger |= gen_sliding_between(queen_square, square);
+    }
+    return pinning_danger;
+}
 
+void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies) {    
+    
+    memset(pin_lines, 0xff, 64 * sizeof(uint64_t));
+    
+    color_t to_move = board.game_state_stack.last()->to_move;
+    color_t other_to_move = (color_t)!to_move;
+    
+    // remove pieces attacked in line with king
+    uint64_t pinning_danger = gen_pinning_danger(square);
+    uint64_t unpinned_blockers = allies & ~pinning_danger | enemies;
 
-    uint64_t unpinned_blockers = unpinned_allies | enemies;
-
+    // comine bishop/rook and queen to avoid extra queen loop
     uint64_t bishop_queen = board.bitboards[other_to_move][BISHOP] | board.bitboards[other_to_move][QUEEN];
     uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
 
@@ -296,7 +283,7 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
         uint64_t pinned = pin & allies;
         if (pinned) {
             chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
-            pin_lines[pinned_square] |= pin;
+            pin_lines[pinned_square] = pin;
         }
     }
     
@@ -311,13 +298,13 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
         uint64_t pinned = pin & allies;
         if (pinned) {
             chess_t::square_t pinned_square = (chess_t::square_t)_tzcnt_u64(pinned);
-            pin_lines[pinned_square] |= pin;
+            // if queen, pin_lines is already set so | is necessary
+            if (pin_lines[pinned_square] == 0xffffffffffffffffull) {
+                pin_lines[pinned_square] = pin;
+            } else {
+                pin_lines[pinned_square] |= pin;
+            }
         }
-    }
-
-    for ( ; unpinned_allies; unpinned_allies = _blsr_u64(unpinned_allies)) {
-        chess_t::square_t ally_square = (chess_t::square_t)_tzcnt_u64(unpinned_allies);
-        pin_lines[ally_square] = 0xffffffffffffffffull;
     }
 }
 
@@ -351,7 +338,7 @@ chess_t::move_array_t chess_t::gen_moves() {
     }
 
     uint64_t pin_lines[64];
-    gen_pins(pin_lines, king_square, danger, blockers, allies, enemies);
+    gen_pins(pin_lines, king_square, allies, enemies);
 
     uint64_t legal = 0xffffffffffffffffull;
     if (num_checkers == 1) {
