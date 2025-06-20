@@ -223,12 +223,12 @@ public:
     
     // generates the attackers for a square
     uint64_t gen_attackers(square_t square, uint64_t blockers);
-    // generates all opponent's attacked square from sliding pieces
-    uint64_t gen_sliding_danger(uint64_t blockers);
-    // generates all opponent's attacked squares from non-sliding pieces
+    // "king danger" terminology from https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
+    // generates all opponent's attacked squares (with the king removed to ensure it cannot go back out of check)
+    uint64_t gen_king_danger_squares(uint64_t blockers);
     uint64_t gen_non_sliding_danger(uint64_t blockers);
     // generates all pin lines for a square
-    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, uint64_t sliding_danger, uint64_t blockers, uint64_t allies, uint64_t enemies);
+    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, uint64_t blockers, uint64_t allies, uint64_t enemies);
     move_array_t gen_moves();
     
     // precomp.cpp
