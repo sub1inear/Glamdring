@@ -245,25 +245,40 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t danger, ui
 
     uint64_t unpinned_allies = allies;
 
-    uint64_t bishop_danger = 0ull;
-    uint64_t rook_danger = 0ull;
+    {
+        uint64_t bishop_danger = 0ull;
+        uint64_t rook_danger = 0ull;
+        uint64_t queen_danger = 0ull;
 
-    for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
-        bishop_danger |= gen_bishop_moves(bishop_square, blockers, 0ull);
-    }
-    for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
-        chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
-        rook_danger |= gen_rook_moves(rook_square, blockers, 0ull);
-    }
+        for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = _blsr_u64(bishops)) {
+            chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishops);
+            bishop_danger |= gen_bishop_moves(bishop_square, blockers, 0ull);
+        }
+        for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = _blsr_u64(rooks)) {
+            chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rooks);
+            rook_danger |= gen_rook_moves(rook_square, blockers, 0ull);
+        }
+        for (uint64_t queens = board.bitboards[other_to_move][QUEEN]; queens; queens = _blsr_u64(queens)) {
+            chess_t::square_t queen_square = (chess_t::square_t)_tzcnt_u64(queens);
+            queen_danger |= gen_queen_moves(queen_square, blockers, 0ull);
+        }
 
-    for (uint64_t attacked_allies = allies & danger; attacked_allies; attacked_allies = _blsr_u64(attacked_allies)) {
-        uint64_t attacked_ally = _blsi_u64(attacked_allies);
-        if (bishop_danger & gen_bishop_moves(square, blockers, 0ull) & attacked_ally ||
-            rook_danger & gen_rook_moves(square, blockers, 0ull) & attacked_ally) {
-            unpinned_allies &= ~attacked_ally;
+        uint64_t bishop_moves_from_square = gen_bishop_moves(square, blockers, 0ull);
+        uint64_t rook_moves_from_square = gen_rook_moves(square, blockers, 0ull);
+        uint64_t queen_moves_from_square = bishop_moves_from_square | rook_moves_from_square;
+
+        uint64_t bishop_pin_line = bishop_moves_from_square & bishop_danger;
+        uint64_t rook_pin_line = rook_moves_from_square & rook_danger;
+        uint64_t queen_pin_line = queen_moves_from_square & queen_danger;
+
+        for (uint64_t attacked_allies = allies & danger; attacked_allies; attacked_allies = _blsr_u64(attacked_allies)) {
+            uint64_t attacked_ally = _blsi_u64(attacked_allies);
+            if (bishop_pin_line & attacked_ally || rook_pin_line & attacked_ally || queen_pin_line & attacked_ally) {
+                unpinned_allies &= ~attacked_ally;
+            }
         }
     }
+
 
     uint64_t unpinned_blockers = unpinned_allies | enemies;
 

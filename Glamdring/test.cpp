@@ -21,7 +21,7 @@ uint32_t chess_t::perft(uint32_t depth, bool root) {
 
 uint32_t chess_t::test() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    
+
     board.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     static constexpr uint32_t perft_results[] = {
         20,
@@ -33,7 +33,7 @@ uint32_t chess_t::test() {
         3195901860,
     };
     for (uint32_t i = 0; i < 4; i++) {
-        std::cout << "Perft " << i << '\n';
+        std::cout << "Perft " << i + 1 << '\n';
         uint32_t perft_result = perft(i + 1);
         std::cout << "Nodes: " << perft_result << '\n';
         std::cout << "Expected Nodes: " << perft_results[i] << '\n';
