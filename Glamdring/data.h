@@ -26,6 +26,6 @@ extern const chess_t::square_t king_castling_end_squares[][2];
 extern const chess_t::square_t rook_castling_start_squares[][2];
 extern const chess_t::square_t rook_castling_end_squares[][2];
 extern const uint64_t pawn_attack_data[][64];
-extern const perft_result_t perft_results[5];
+extern const perft_result_t perft_results[6];
 extern const char piece_to_char[][7];
 }

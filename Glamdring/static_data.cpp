@@ -23,19 +23,6 @@ const chess_t::square_t rook_castling_end_squares[][2] = {
 };
 const perft_result_t perft_results[] = {
     {
-        "Position 5",
-        "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
-        {
-            44,
-            1486,
-            62379,
-            2103487,
-            89941194,
-            3048196529,
-            131724123591,
-        }
-    },
-    {
         "Startpos",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         {
@@ -46,6 +33,19 @@ const perft_result_t perft_results[] = {
             4865609,
             119060324,
             3195901860,
+        },
+    },
+    {
+        "Kiwipete",
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        {
+            48,
+            2039,
+            97862,
+            4085603,
+            193690690,
+            8031647685,
+            374190009323,
         },
     },
     {
@@ -75,16 +75,29 @@ const perft_result_t perft_results[] = {
         }
     },
     {
-        "Kiwipete",
-        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        "Position 5",
+        "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
         {
-            48,
-            2039,
-            97862,
-            4085603,
-            193690690,
-            8031647685,
-            374190009323,
+            44,
+            1486,
+            62379,
+            2103487,
+            89941194,
+            3048196529,
+            131724123591,
+        }
+    },
+    {
+        "Position 6",
+        "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+        {
+            46,
+            2079,
+            89890,
+            3894594,
+            164075551,
+            6923051137,
+            287188994746,
         },
     },
 };

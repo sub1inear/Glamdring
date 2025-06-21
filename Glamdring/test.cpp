@@ -22,13 +22,10 @@ uint64_t chess_t::perft(uint32_t depth, bool root) {
 
 uint32_t chess_t::test() {
     uint32_t failures = 0;
-    /*board.load_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
-    std::cout << "Nodes: " << perft(5) << '\n';*/
 
     for (data::perft_result_t perft_pos : data::perft_results) {
         board.load_fen(perft_pos.fen);
         for (uint32_t i = 0; i < 7; i++) {
-
             std::cout << perft_pos.name << " Perft: " << i + 1 << '\n';
             std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
             uint64_t perft_result = perft(i + 1);
