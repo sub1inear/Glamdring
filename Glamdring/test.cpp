@@ -21,8 +21,8 @@ uint64_t chess_t::perft(uint32_t depth, bool root) {
 }
 
 uint32_t chess_t::test() {
-    //board.load_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
-    //std::cout << "Nodes: " << perft(5) << '\n';
+    //board.load_fen("r3k2r/p1pp1pb1/1n3np1/4N3/1p2P1q1/2Nb1Q1p/PPPBKPPP/R6R w kq - 0 4");
+    //std::cout << "Nodes: " << perft(1) << '\n';
 
     for (data::perft_result_t perft_pos : data::perft_results) {
         board.load_fen(perft_pos.fen);

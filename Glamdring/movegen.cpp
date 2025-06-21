@@ -278,8 +278,10 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, ui
 
     for ( ; bishop_queen_attackers; bishop_queen_attackers = _blsr_u64(bishop_queen_attackers)) {
         chess_t::square_t bishop_square = (chess_t::square_t)_tzcnt_u64(bishop_queen_attackers);
+        uint64_t bishop_queen_attacker = _blsi_u64(bishop_queen_attackers);
+
         uint64_t pin = gen_bishop_moves(bishop_square, unpinned_blockers, 0ull) & bishop_moves_from_square;
-        pin |= bishop_queen_attackers;
+        pin |= bishop_queen_attacker;
 
         uint64_t pinned = pin & pinned_allies;
         if (_mm_popcnt_u64(pinned) == 1) {
@@ -293,8 +295,10 @@ void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, ui
     
     for ( ; rook_queen_attackers; rook_queen_attackers = _blsr_u64(rook_queen_attackers)) {
         chess_t::square_t rook_square = (chess_t::square_t)_tzcnt_u64(rook_queen_attackers);
+        uint64_t rook_queen_attacker = _blsi_u64(rook_queen_attackers);
+
         uint64_t pin = gen_rook_moves(rook_square, unpinned_blockers, 0ull) & rook_moves_from_square;
-        pin |= rook_queen_attackers;
+        pin |= rook_queen_attacker;
 
         uint64_t pinned = pin & pinned_allies;
         if (_mm_popcnt_u64(pinned) == 1) {
