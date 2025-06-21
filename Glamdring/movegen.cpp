@@ -21,7 +21,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
         if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
-        if (end_square < 8) {
+        if (to_move == WHITE ? end_square < 8 : end_square > 55) {
             for (uint32_t f = move_t::KNIGHT_PROMOTION; f <= move_t::QUEEN_PROMOTION; f++) {
                 moves.add({start_square, end_square, (move_t::move_flags_t)f});
             }
