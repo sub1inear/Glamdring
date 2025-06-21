@@ -14,7 +14,7 @@ extern const uint64_t knight_move_data[];
 extern const uint64_t king_move_data[];
 extern const uint64_t sliding_between_data[][64];
 
-// static_data.cpp=
+// static_data.cpp
 struct perft_result_t {
     const char *name;
     const char *fen;

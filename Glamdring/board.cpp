@@ -39,7 +39,9 @@ void chess_t::board_t::print() {
 }
 
 void chess_t::board_t::clear() {
-    memset(board, CLEAR, sizeof(board));
+    for (uint32_t i = 0; i < sizeof(board) / sizeof(board[0]); i++) {
+        board[i] = { CLEAR, WHITE };
+    }
     memset(bitboards, 0, sizeof(bitboards));
     memset(game_state_stack.data, 0, sizeof(game_state_stack.data));
     game_state_stack.size = 1;
@@ -169,8 +171,13 @@ void chess_t::board_t::undo_move(move_t move) {
     game_state_t *new_game_state = game_state_stack.pop();
 
     piece_color_t start_piece = get_piece(move.to);
+    piece_color_t new_piece = start_piece;
 
-    set_piece(move.from, start_piece);
+    if (move.is_promotion()) {
+        new_piece = { PAWN, new_game_state->to_move };
+    }
+
+    set_piece(move.from, new_piece);
 
     if (move.is_capture()) {
         if (move.flags == move_t::EN_PASSANT_CAPTURE) {
