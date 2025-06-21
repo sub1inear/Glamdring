@@ -153,14 +153,14 @@ void chess_t::board_t::make_move(move_t move) {
     if (start_piece.piece == ROOK) {
         if (move.from == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
             new_game_state->castling_rights[old_game_state->to_move][KINGSIDE] = false;    
-        } else if (move.from == data::rook_castling_start_squares[old_game_state->to_move][KINGSIDE]) {
+        } else if (move.from == data::rook_castling_start_squares[old_game_state->to_move][QUEENSIDE]) {
             new_game_state->castling_rights[old_game_state->to_move][QUEENSIDE] = false;
         }
     }
     if (captured_piece.piece == ROOK) {
         if (move.to == data::rook_castling_start_squares[new_game_state->to_move][KINGSIDE]) {
             new_game_state->castling_rights[new_game_state->to_move][KINGSIDE] = false;    
-        } else if (move.to == data::rook_castling_start_squares[new_game_state->to_move][KINGSIDE]) {
+        } else if (move.to == data::rook_castling_start_squares[new_game_state->to_move][QUEENSIDE]) {
             new_game_state->castling_rights[new_game_state->to_move][QUEENSIDE] = false;
         }
     }
