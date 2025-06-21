@@ -23,6 +23,19 @@ const chess_t::square_t rook_castling_end_squares[][2] = {
 };
 const perft_result_t perft_results[] = {
     {
+        "Startpos",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        {
+            20,
+            400,
+            8902,
+            197281,
+            4865609,
+            119060324,
+            3195901860,
+        },
+    },
+    {
         "Position 3",
         "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
         {
@@ -36,17 +49,17 @@ const perft_result_t perft_results[] = {
         },
     },
     {
-        "Startpos",
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "Position 4",
+        "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
         {
-            20,
-            400,
-            8902,
-            197281,
-            4865609,
-            119060324,
-            3195901860,
-        },
+            6,
+            264,
+            9467,
+            422333,
+            15833292,
+            706045033,
+            27209691363,
+        }
     },
     {
         "Kiwipete",

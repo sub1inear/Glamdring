@@ -21,26 +21,29 @@ uint64_t chess_t::perft(uint32_t depth, bool root) {
 }
 
 uint32_t chess_t::test() {
-    //board.load_fen("r3k2r/p1pp1pb1/1n3np1/4N3/1p2P1q1/2Nb1Q1p/PPPBKPPP/R6R w kq - 0 4");
-    //std::cout << "Nodes: " << perft(1) << '\n';
+    uint32_t failures = 0;
+    /*board.load_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+    std::cout << "Nodes: " << perft(5) << '\n';*/
 
     for (data::perft_result_t perft_pos : data::perft_results) {
         board.load_fen(perft_pos.fen);
         for (uint32_t i = 0; i < 7; i++) {
-            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
             std::cout << perft_pos.name << " Perft: " << i + 1 << '\n';
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
             uint64_t perft_result = perft(i + 1);
-            
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
             std::cout << "Nodes: " << perft_result << '\n';
             std::cout << "Expected Nodes: " << perft_pos.results[i] << '\n';
-            std::cout << (perft_result == perft_pos.results[i] ? "\x1b[32mSucceeded\x1b[0m\n\n" : "\x1b[31mFailed\x1b[0m\n\n");
+            bool failed = perft_result != perft_pos.results[i];
+            failures += failed;
+            std::cout << (failed ? "\x1b[31mFailed\x1b[0m\n\n" : "\x1b[32mSucceeded\x1b[0m\n\n");
             
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             std::chrono::duration<float> time = end - start;
             std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(time).count() << " ms\n";
             std::cout << "NPS: " << std::fixed << (uint64_t)(perft_result / time.count()) << std::scientific << "\n\n";
         }
     }
-    return 0;
+    return failures;
 }

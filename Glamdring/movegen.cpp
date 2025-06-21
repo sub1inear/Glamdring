@@ -77,31 +77,30 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
     if (en_passant != null_square) {
         // check if en passant is pinned
-        // skip if more than one allied pawn on rank
         uint64_t en_passant_bitboard = 1ull << en_passant;
         uint64_t capture_bitboard = 1ull << (en_passant + (to_move == WHITE ? 8 : -8));
 
         constexpr uint64_t en_passant_start_rank = to_move == WHITE ? rank_5 : rank_4;
-        if (_mm_popcnt_u64(board.bitboards[to_move][PAWN] & en_passant_start_rank) == 1) {
+        
+        uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
+        uint64_t pinner = rook_queen & en_passant_start_rank;
+
+        if (pinner) {
+            chess_t::square_t pinner_square = (chess_t::square_t)_tzcnt_u64(pinner);
             blockers &= ~capture_bitboard;
-            blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_start_rank);
-            uint64_t rook_queen = board.bitboards[other_to_move][ROOK] | board.bitboards[other_to_move][QUEEN];
-            uint64_t pinner = rook_queen & en_passant_start_rank;
-            if (pinner) {
-                chess_t::square_t pinner_square = (chess_t::square_t)_tzcnt_u64(pinner);
-                if (gen_rook_moves(pinner_square, blockers, 0ull) & (board.bitboards[to_move][KING] & en_passant_start_rank)) {
-                    return; // en passant is pinned, skip
-                }
+            blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_start_rank & gen_rook_moves(pinner_square, blockers, 0ull));
+            
+            if (gen_rook_moves(pinner_square, blockers, 0ull) & (board.bitboards[to_move][KING] & en_passant_start_rank)) {
+                return; // en passant is pinned, skip
             }
         }
-
 
         // make capturing pawn end square legal if en passant square is legal
         // en passant is the only move where a piece can get captured without the capturing piece being on that square
 
         legal |= to_move == WHITE ? (legal & capture_bitboard) >> 8 : (legal & capture_bitboard) << 8;
 
-        if (capture_left_move & en_passant_bitboard & legal ) {
+        if (capture_left_move & en_passant_bitboard & legal) {
             chess_t::square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
             if (en_passant_bitboard & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
