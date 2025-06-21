@@ -23,6 +23,19 @@ const chess_t::square_t rook_castling_end_squares[][2] = {
 };
 const perft_result_t perft_results[] = {
     {
+        "Position 3",
+        "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+        {
+            14,
+            191,
+            2812,
+            43238,
+            674624,
+            11030083,
+            178633661,
+        },
+    },
+    {
         "Startpos",
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         {
