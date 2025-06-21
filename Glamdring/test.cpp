@@ -24,7 +24,7 @@ uint32_t chess_t::test() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     
     for (data::perft_result_t perft_pos : data::perft_results) {
-        board.load_fen(perft_pos.fen);
+          board.load_fen(perft_pos.fen);
         for (uint32_t i = 0; i < 7; i++) {
             std::cout << perft_pos.name << " Perft: " << i + 1 << '\n';
             uint64_t perft_result = perft(i + 1);

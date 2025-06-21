@@ -49,4 +49,24 @@ const perft_result_t perft_results[] = {
         },
     },
 };
+const char piece_to_char[][7] = {
+    {
+        'P',
+        'N',
+        'B',
+        'R',
+        'Q',
+        'K',
+        '.',
+    },
+    {
+        'p',
+        'n',
+        'b',
+        'r',
+        'q',
+        'k',
+        '.',
+    },
+};
 }

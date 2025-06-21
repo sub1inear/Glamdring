@@ -74,12 +74,6 @@ public:
 
     chess_t() {}
 
-    // utils.cpp
-    static square_t file_rank_to_square(square_t file, square_t rank);
-    static void square_to_file_rank(square_t square, char *out);
-    static void print_square(square_t square);
-    static void print_bitboard(uint64_t bitboard);
-
     // TODO: use 1 byte
     class piece_color_t {
     public:
@@ -95,6 +89,13 @@ public:
         piece_color_t piece;
         square_t square;
     };
+
+    // utils.cpp
+    static square_t file_rank_to_square(square_t file, square_t rank);
+    static void square_to_file_rank(square_t square, char *out);
+    static void print_square(square_t square);
+    static void print_bitboard(uint64_t bitboard);
+    static char piece_to_char(piece_t piece);
 
     class move_t {
     public:
@@ -152,13 +153,13 @@ public:
             return (castling_side_t)(flags & 0x1);
         }
         piece_t get_promotion() {
-            return (piece_t)((flags & 0x7) + 1); // TODO: remove + 1 by starting piece_t with knight?
+            return (piece_t)((flags & 0x3) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
         void print() {
             print_square(from);
             print_square(to);
             if (is_promotion()) {
-                std::cout << (char)get_promotion();
+                std::cout << piece_to_char(get_promotion());
             }
         }
     };

@@ -1,50 +1,23 @@
 #include "chess.h"
+#include "data.h"
+
+char chess_t::piece_to_char(piece_t piece) {
+    return data::piece_to_char[BLACK][piece];
+}
 
 chess_t::piece_color_t::piece_color_t(char c) {
-    switch (tolower(c)) {
-    case 'p':
-        piece = PAWN;
-        break;
-    case 'n':
-        piece = KNIGHT;
-        break;
-    case 'b':
-        piece = BISHOP;
-        break;
-    case 'r':
-        piece = ROOK;
-        break;
-    case 'q':
-        piece = QUEEN;
-        break;
-    case 'k':
-        piece = KING;
-        break;
-    default:
-        piece = CLEAR;
-        break;
+    for (uint32_t color_idx = 0; color_idx < 2; color_idx++) {
+        for (uint32_t piece_idx = 0; piece_idx < 6; piece_idx++) {
+            if (c == data::piece_to_char[color_idx][piece_idx]) {
+                color = (color_t)color_idx;
+                piece = (piece_t)piece_idx;
+            }
+        }
     }
-    // islower() can return any non-zero value, need 1 to convert to color
-    color = (color_t)(c >= 'a' && c <= 'z');
 }
 
 chess_t::piece_color_t::operator char() {
-    switch (piece) {
-    case PAWN:
-        return color == WHITE ? 'P' : 'p';
-    case KNIGHT:
-        return color == WHITE ? 'N' : 'n';
-    case BISHOP:
-        return color == WHITE ? 'B' : 'b';
-    case ROOK:
-        return color == WHITE ? 'R' : 'r';
-    case QUEEN:
-        return color == WHITE ? 'Q' : 'q';
-    case KING:
-        return color == WHITE ? 'K' : 'k';
-    default:
-        return '.';
-    }
+    return data::piece_to_char[color][piece];
 }
 
 chess_t::square_t chess_t::file_rank_to_square(square_t file, square_t rank) {
