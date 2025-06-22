@@ -3,8 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <cstdio>
 #include <cctype>
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <immintrin.h>
@@ -90,80 +90,15 @@ public:
         square_t square;
     };
 
+    class board_t;
+    class move_t;
+
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
     static void print_square(square_t square);
     static void print_bitboard(uint64_t bitboard);
     static char piece_to_char(piece_t piece);
-
-    class move_t {
-    public:
-        /*
-        From https://www.chessprogramming.org/Encoding_Moves#From-To_Based
-        Binary Format:
-        0b x x x x
-           ^ ^ ^ ^
-           | | | | -- Special 1
-           | | | ---- Special 2
-           | | ------ Capture
-           | -------- Promotion
-        */
-        enum move_flags_t : uint8_t {
-            QUIET,
-            DOUBLE_PAWN_PUSH,
-            KING_CASTLE,
-            QUEEN_CASTLE,
-            CAPTURE,
-            EN_PASSANT_CAPTURE,
-            PROMOTION = 8,
-            KNIGHT_PROMOTION = 8,
-            BISHOP_PROMOTION,
-            ROOK_PROMOTION,
-            QUEEN_PROMOTION,
-            KNIGHT_PROMOTION_CAPTURE,
-            BISHOP_PROMOTION_CAPTURE,
-            ROOK_PROMOTION_CAPTURE,
-            QUEEN_PROMOTION_CAPTURE,
-        };
-        packed_square_t from/*: 6 bits*/;
-        packed_square_t to/*: 6 bits*/;
-        move_flags_t flags/*: 4 bits*/;
-        move_t() {}
-        move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
-        move_t(uint16_t value) {
-            // TODO: use _bext_u32
-            from = value >> 10;
-            to = (value >> 4) & 0x3f;
-            flags = (move_flags_t)(value & 0xf);
-        }
-        uint16_t pack() {
-            return from << 10 | to << 4 | flags;
-        }
-        bool is_capture() {
-            return flags & CAPTURE;
-        }
-        bool is_promotion() {
-            return flags & PROMOTION;
-        }
-        bool is_castling() {
-            return flags == KING_CASTLE || flags == QUEEN_CASTLE;
-        }
-        castling_side_t get_castling() {
-            return (castling_side_t)(flags & 0x1);
-        }
-        piece_t get_promotion() {
-            return (piece_t)((flags & 0x3) + 1); // TODO: remove + 1 by starting piece_t with knight?
-        }
-        void print() {
-            print_square(from);
-            print_square(to);
-            if (is_promotion()) {
-                std::cout << piece_to_char(get_promotion());
-            }
-        }
-    };
-    typedef array_t<move_t, max_moves> move_array_t; 
 
     // board.cpp
     class board_t {
@@ -205,8 +140,84 @@ public:
         void undo_move(move_t move);
     };
     board_t board;
-    
+
     // movegen.cpp
+    class move_t {
+    public:
+        /*
+        From https://www.chessprogramming.org/Encoding_Moves#From-To_Based
+        Binary Format:
+        0b x x x x
+           ^ ^ ^ ^
+           | | | | -- Special 1
+           | | | ---- Special 2
+           | | ------ Capture
+           | -------- Promotion
+        */
+        enum move_flags_t : uint8_t {
+            QUIET,
+            DOUBLE_PAWN_PUSH,
+            KING_CASTLE,
+            QUEEN_CASTLE,
+            CAPTURE,
+            EN_PASSANT_CAPTURE,
+            PROMOTION = 8,
+            KNIGHT_PROMOTION = 8,
+            BISHOP_PROMOTION,
+            ROOK_PROMOTION,
+            QUEEN_PROMOTION,
+            KNIGHT_PROMOTION_CAPTURE,
+            BISHOP_PROMOTION_CAPTURE,
+            ROOK_PROMOTION_CAPTURE,
+            QUEEN_PROMOTION_CAPTURE,
+        };
+        packed_square_t from/*: 6 bits*/;
+        packed_square_t to/*: 6 bits*/;
+        move_flags_t flags/*: 4 bits*/;
+        move_t() {}
+        move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
+        move_t(board_t &board, const char *str) {
+            from = file_rank_to_square(str[0], str[1]);
+            to = file_rank_to_square(str[2], str[3]);
+            if (board.get_piece(to).piece != CLEAR) {
+                flags = (move_flags_t)((uint8_t)(flags) | CAPTURE);
+            }
+
+        }
+        move_t(uint16_t value) {
+            // TODO: use _bext_u32
+            from = value >> 10;
+            to = (value >> 4) & 0x3f;
+            flags = (move_flags_t)(value & 0xf);
+        }
+        uint16_t pack() {
+            return from << 10 | to << 4 | flags;
+        }
+        bool is_capture() {
+            return flags & CAPTURE;
+        }
+        bool is_promotion() {
+            return flags & PROMOTION;
+        }
+        bool is_castling() {
+            return flags == KING_CASTLE || flags == QUEEN_CASTLE;
+        }
+        castling_side_t get_castling() {
+            return (castling_side_t)(flags & 0x1);
+        }
+        piece_t get_promotion() {
+            return (piece_t)((flags & 0x3) + 1); // TODO: remove + 1 by starting piece_t with knight?
+        }
+        void print() {
+            print_square(from);
+            print_square(to);
+            if (is_promotion()) {
+                std::cout << piece_to_char(get_promotion());
+            }
+        }
+    };
+    typedef array_t<move_t, max_moves> move_array_t; 
+
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
     void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves);
@@ -238,4 +249,8 @@ public:
     // test.cpp
     uint64_t perft(uint32_t depth, bool root = true);
     uint32_t test();
+
+    // uci.cpp
+
+    void uci();
 };

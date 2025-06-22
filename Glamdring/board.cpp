@@ -95,7 +95,7 @@ void chess_t::board_t::load_fen(const char *fen) {
         game_state_stack.last()->en_passant = file_rank_to_square(file, rank);
     }
     fen_idx++;
-    std::sscanf(&fen[fen_idx], "%n %n", &game_state_stack.last()->half_move_clock, &game_state_stack.last()->full_moves);
+    sscanf(&fen[fen_idx], "%d %d", &game_state_stack.last()->half_move_clock, &game_state_stack.last()->full_moves);
 }
 
 void chess_t::board_t::make_move(move_t move) {
