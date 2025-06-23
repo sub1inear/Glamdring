@@ -1,41 +1,48 @@
 #include "chess.h"
 #include "data.h"
 
-void chess_t::board_t::print() {
+void chess_t::board_t::print(FILE *out) {
     game_state_t *game_state = game_state_stack.last();
     for (uint32_t i = 0; i < 8; i++) {
-        std::cout << "\x1b[38;5;240m" <<  (char)('8' - i) << " \x1b[0m";
+        fprintf(out, "\x1b[38;5;240m%c\x1b[0m ", '8' - i);
         for (uint32_t j = 0; j < 8; j++) {
             chess_t::square_t square = i * 8 + j;
-            std::cout << (char)get_piece(square) << ' ';
+            fprintf(out, "%c ", (char)get_piece(square));
         }
-        std::cout << '\n';
+        fputc('\n', out);
     }
-    std::cout << "\x1b[38;5;240m  a b c d e f g h\x1b[0m\nTo Move:\n";
-    std::cout << (game_state->to_move == WHITE ? "White" : "Black");
-    std::cout << "\nCastling:\n";
+    fprintf(out,
+            "\x1b[38;5;240m  a b c d e f g h\x1b[0m\n"
+            "To Move:\n"
+            "%s\n"
+            "Castling:\n",
+            game_state->to_move == WHITE ? "White" : "Black");
     static constexpr char castling_names[2][2] = { { 'K', 'Q' }, { 'k', 'q' } };
     for (uint32_t color = 0; color < 2; color++) {
         for (uint32_t side = 0; side < 2; side++) {
             if (game_state->castling_rights[color][side]) {
-                std::cout << castling_names[color][side];
+                fputc(castling_names[color][side], out);
             }
         }
     }
     
     if (!game_state->castling_rights[WHITE][KINGSIDE] && !game_state->castling_rights[WHITE][QUEENSIDE] &&
         !game_state->castling_rights[BLACK][KINGSIDE] && !game_state->castling_rights[BLACK][QUEENSIDE]) {
-        std::cout << "None";
+        fputs("None", out);
     }
-    std::cout << "\nEn Passant:\n";
+    fputs("\nEn Passant:\n", out);
     if (game_state->en_passant == null_square) {
-        std::cout << "None";
+        fputs("None", out);
     } else {
-        print_square(game_state->en_passant);
+        print_square(game_state->en_passant, out);
     }
-    std::cout << "\nHalf Move Clock:\n" << game_state->half_move_clock;
-    std::cout << "\nFull Moves:\n" << game_state->full_moves;
-    std::cout << '\n';
+    fprintf(out,
+            "\nHalf Move Clock:\n"
+            "%d\n"
+            "\nFull Moves:\n"
+            "%d\n",
+            game_state->half_move_clock,
+            game_state->full_moves);
 }
 
 void chess_t::board_t::clear() {

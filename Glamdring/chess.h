@@ -69,7 +69,7 @@ public:
     };
 
     static constexpr square_t null_square = -1;
-    static constexpr uint32_t max_ply = 250;
+    static constexpr uint32_t max_ply = 1000;
     static constexpr uint32_t max_moves = 218;
 
     chess_t() {}
@@ -96,9 +96,10 @@ public:
     // utils.cpp
     static square_t file_rank_to_square(square_t file, square_t rank);
     static void square_to_file_rank(square_t square, char *out);
-    static void print_square(square_t square);
+    static void print_square(square_t square, FILE *out = stdout);
     static void print_bitboard(uint64_t bitboard);
     static char piece_to_char(piece_t piece);
+    static piece_t char_to_piece(char c);
 
     // board.cpp
     class board_t {
@@ -133,7 +134,7 @@ public:
             clear_piece_bitboard(square, piece);
         }
         
-        void print();
+        void print(FILE *out = stdout);
         void clear();
         void load_fen(const char *fen);
         void make_move(move_t move);
@@ -141,7 +142,6 @@ public:
     };
     board_t board;
 
-    // movegen.cpp
     class move_t {
     public:
         /*
@@ -176,14 +176,7 @@ public:
         move_flags_t flags/*: 4 bits*/;
         move_t() {}
         move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
-        move_t(board_t &board, const char *str) {
-            from = file_rank_to_square(str[0], str[1]);
-            to = file_rank_to_square(str[2], str[3]);
-            if (board.get_piece(to).piece != CLEAR) {
-                flags = (move_flags_t)((uint8_t)(flags) | CAPTURE);
-            }
-
-        }
+        move_t(board_t &board, const char *str); // utils.cpp
         move_t(uint16_t value) {
             // TODO: use _bext_u32
             from = value >> 10;
@@ -208,16 +201,17 @@ public:
         piece_t get_promotion() {
             return (piece_t)((flags & 0x3) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
-        void print() {
-            print_square(from);
-            print_square(to);
+        void print(FILE *out = stdout) {
+            print_square(from, out);
+            print_square(to, out);
             if (is_promotion()) {
-                std::cout << piece_to_char(get_promotion());
+                putc(piece_to_char(get_promotion()), out);
             }
         }
     };
     typedef array_t<move_t, max_moves> move_array_t; 
 
+    // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
     void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves);
@@ -240,7 +234,7 @@ public:
     uint64_t gen_king_danger_squares(uint64_t blockers);
     uint64_t gen_pinning_danger(square_t square);
     // generates all pin lines for a square
-    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies);
+    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies); // TODO: use reference?
     move_array_t gen_moves();
     
     // precomp.cpp
@@ -250,7 +244,9 @@ public:
     uint64_t perft(uint32_t depth, bool root = true);
     uint32_t test();
 
-    // uci.cpp
+    // search.cpp
+    move_t search();
 
+    // uci.cpp
     void uci();
 };

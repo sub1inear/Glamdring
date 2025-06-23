@@ -22,6 +22,7 @@ struct perft_result_t {
 };
 extern const uint64_t king_castling_clear[][2];
 extern const uint64_t king_castling_safe[][2];
+extern const chess_t::square_t king_castling_start_squares[];
 extern const chess_t::square_t king_castling_end_squares[][2];
 extern const chess_t::square_t rook_castling_start_squares[][2];
 extern const chess_t::square_t rook_castling_end_squares[][2];

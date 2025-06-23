@@ -9,6 +9,10 @@ const uint64_t king_castling_safe[][2] = {
     { 0x6000000000000000ull, 0xc00000000000000ull, },
     { 0x60ull, 0xcull }
 };
+const chess_t::square_t king_castling_start_squares[] = {
+    chess_t::E1,
+    chess_t::E8,
+};
 const chess_t::square_t king_castling_end_squares[][2] = {
     { chess_t::G1, chess_t::C1, },
     { chess_t::G8, chess_t::C8, },
