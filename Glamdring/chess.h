@@ -253,7 +253,7 @@ public:
 
     move_t best_move;
 
-    int32_t search(int32_t depth, bool root = true);
+    int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
 
     // eval.cpp
     int32_t eval();
