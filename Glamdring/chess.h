@@ -256,6 +256,8 @@ public:
     int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
 
     // eval.cpp
+    template <color_t color>
+    int32_t count_material();
     int32_t eval();
 
     // uci.cpp

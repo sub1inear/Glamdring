@@ -24,9 +24,7 @@ int32_t chess_t::search(int32_t depth, bool root, int32_t alpha, int32_t beta) {
                 best_move = move;
             }
         }
-
         alpha = std::max(alpha, move_eval);
-
         if (alpha >= beta) {
             break; // beta cutoff
         }
