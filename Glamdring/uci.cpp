@@ -1,8 +1,13 @@
 #include "chess.h"
 
-static void output_to_gui(const char *str, FILE *log) {
-    fputs(str, stdout);
-    fputs(str, log);
+static void output_to_gui(const char *fmt, FILE *log, ...) {
+    va_list args;
+    va_start(args, log);
+
+    vprintf(fmt, args);
+    vfprintf(log, fmt, args);
+
+    va_end(args);
 }
 static void newline_to_gui(FILE *log) {
     putchar('\n');
@@ -50,14 +55,16 @@ void chess_t::uci() {
                     }
                 }
             } else if (!strcmp(command, "go")) {
-                move_t move = search();
+                (void)search(5);
                 output_to_gui("bestmove ", log);
-                move.print();
-                move.print(log);
+                best_move.print();
+                best_move.print(log);
                 newline_to_gui(log);
             } else if (!strcmp(command, "d")) {
                 board.print();
                 board.print(log);
+            } else if (!strcmp(command, "eval")) {
+                output_to_gui("%d\n", log, eval()); 
             } else if (!strcmp(command, "quit")) {
                 return;
             }

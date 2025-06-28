@@ -125,4 +125,7 @@ const char piece_to_char[][7] = {
         '.',
     },
 };
+const int32_t piece_values[] = {
+    100, 320, 330, 500, 900, 0, 0
+};
 }

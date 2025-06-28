@@ -2,11 +2,14 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
+#include <cstdarg>
 #include <immintrin.h>
 
 template <typename T, uint32_t S>
@@ -70,7 +73,9 @@ public:
 
     static constexpr square_t null_square = -1;
     static constexpr uint32_t max_ply = 1000;
-    static constexpr uint32_t max_moves = 218;
+    static constexpr uint32_t max_moves = 218; // https://chess.stackexchange.com/questions/4490/maximum-possible-movement-in-a-turn
+    static constexpr int32_t eval_max = INT32_MAX;
+    static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
 
     chess_t() {}
 
@@ -245,7 +250,13 @@ public:
     uint32_t test();
 
     // search.cpp
-    move_t search();
+
+    move_t best_move;
+
+    int32_t search(int32_t depth, bool root = true);
+
+    // eval.cpp
+    int32_t eval();
 
     // uci.cpp
     void uci();
