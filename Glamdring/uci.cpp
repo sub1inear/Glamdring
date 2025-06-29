@@ -55,8 +55,11 @@ void chess_t::uci() {
                     }
                 }
             } else if (!strcmp(command, "go")) {
-                (void)search(6);
-                output_to_gui("bestmove ", log);
+                nodes = 0;
+                (void)search(4);
+
+                output_to_gui("%d nodes searched\n"
+                              "bestmove ", log, nodes);
                 best_move.print();
                 best_move.print(log);
                 newline_to_gui(log);

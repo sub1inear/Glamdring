@@ -126,7 +126,7 @@ const char piece_to_char[][7] = {
     },
 };
 // combined from https://www.chessprogramming.org/Simplified_Evaluation_Function
-const int32_t piece_square_values[][64] = {
+const int16_t piece_square_values[][64] = {
     {
         100, 100, 100, 100, 100, 100, 100, 100,
         150, 150, 150, 150, 150, 150, 150, 150,
@@ -177,5 +177,15 @@ const int32_t piece_square_values[][64] = {
         890, 900, 905, 900, 900, 900, 900, 890,
         880, 890, 890, 895, 895, 890, 890, 880,
     },
+};
+// inspired by https://rustic-chess.org/search/ordering/mvv_lva.html
+const uint8_t mvv_lva[][6] = {
+    { 15, 14, 13, 12, 11, 10, },
+    { 25, 24, 23, 22, 21, 20, },
+    { 35, 34, 33, 32, 31, 30, },
+    { 45, 44, 43, 42, 41, 40, },
+    { 55, 54, 53, 52, 51, 50, },
+    {  0,  0,  0,  0,  0,  0, },
+    {  0,  0,  0,  0,  0,  0, },
 };
 }

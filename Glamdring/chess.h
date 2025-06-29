@@ -4,6 +4,7 @@
 #include <fstream>
 #include <limits>
 #include <chrono>
+#include <utility>
 #include <cstdint>
 #include <cstdio>
 #include <cctype>
@@ -214,8 +215,7 @@ public:
             }
         }
     };
-    typedef array_t<move_t, max_moves> move_array_t; 
-
+    typedef array_t<move_t, max_moves> move_array_t;
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
@@ -252,7 +252,10 @@ public:
     // search.cpp
 
     move_t best_move;
-
+    uint32_t nodes;
+    typedef array_t<uint8_t, max_moves> score_array_t;
+    score_array_t score_moves(move_array_t &moves);
+    move_t order_moves(move_array_t &moves, score_array_t &scores, uint32_t idx);
     int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
 
     // eval.cpp
