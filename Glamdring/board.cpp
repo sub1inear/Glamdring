@@ -4,7 +4,7 @@
 void chess_t::board_t::print(FILE *out) {
     game_state_t *game_state = game_state_stack.last();
     for (uint32_t i = 0; i < 8; i++) {
-        fprintf(out, "\x1b[38;5;240m%c\x1b[0m ", '8' - i);
+        fprintf(out, "\x1b[38;5;240m" "%c" "\x1b[0m" " ", '8' - i);
         for (uint32_t j = 0; j < 8; j++) {
             chess_t::square_t square = i * 8 + j;
             fprintf(out, "%c ", (char)get_piece(square));
@@ -12,7 +12,9 @@ void chess_t::board_t::print(FILE *out) {
         fputc('\n', out);
     }
     fprintf(out,
-            "\x1b[38;5;240m  a b c d e f g h\x1b[0m\n"
+            "\x1b[38;5;240m"
+            "a b c d e f g h"
+            "\x1b[0m\n"
             "To Move:\n"
             "%s\n"
             "Castling:\n",

@@ -77,6 +77,7 @@ public:
     static constexpr uint32_t max_moves = 218; // https://chess.stackexchange.com/questions/4490/maximum-possible-movement-in-a-turn
     static constexpr int32_t eval_max = INT32_MAX;
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
+    static constexpr uint16_t null_packed_move = 0;
 
     chess_t() {}
 
@@ -181,17 +182,8 @@ public:
         packed_square_t to/*: 6 bits*/;
         move_flags_t flags/*: 4 bits*/;
         move_t() {}
-        move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
+        constexpr move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
         move_t(board_t &board, const char *str); // utils.cpp
-        move_t(uint16_t value) {
-            // TODO: use _bext_u32
-            from = value >> 10;
-            to = (value >> 4) & 0x3f;
-            flags = (move_flags_t)(value & 0xf);
-        }
-        uint16_t pack() {
-            return from << 10 | to << 4 | flags;
-        }
         bool is_capture() {
             return flags & CAPTURE;
         }
@@ -216,6 +208,49 @@ public:
         }
     };
     typedef array_t<move_t, max_moves> move_array_t;
+
+    class transposition_table_t {
+    public:
+        enum tranposition_type_t : uint8_t {
+            EXACT,
+            UPPERBOUND,
+            LOWERBOUND,
+        };
+        struct transposition_result_t {
+            move_t move;
+            int16_t eval;
+        };
+        class transposition_data_t {
+        public:
+            transposition_result_t result;
+            uint8_t depth;
+            tranposition_type_t type;
+            operator uint64_t() {
+                uint64_t result;
+                static_assert(sizeof(transposition_data_t) == sizeof(result));
+                memcpy(&result, this, sizeof(result));
+                return result;
+            }
+        };
+        struct transposition_entry_t {
+            transposition_data_t data;
+            uint64_t data_xor_key;
+        };
+        transposition_entry_t *table;
+        static constexpr uint64_t size = 512 * 1024 * 1024; // must be power of two to turn key % size into key & (size - 1)
+        static constexpr uint64_t entries = size / sizeof(transposition_entry_t);
+
+        transposition_table_t() {
+            table = new transposition_entry_t[entries];
+        }
+        ~transposition_table_t() {
+            delete[] table;
+        }
+        transposition_result_t lookup(uint64_t key, int32_t alpha, int32_t beta, uint8_t depth);
+        void store(transposition_result_t result, uint64_t key, int32_t alpha, int32_t beta, uint8_t depth);
+    };
+    transposition_table_t transposition_table;
+
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
@@ -242,15 +277,12 @@ public:
     void gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies); // TODO: use reference?
     move_array_t gen_moves();
     
-    // precomp.cpp
-    static void gen_precomp_data();
-
-    // test.cpp
-    uint64_t perft(uint32_t depth, bool root = true);
-    uint32_t test();
+    // eval.cpp
+    template <color_t color>
+    int32_t count_material();
+    int32_t eval();
 
     // search.cpp
-
     move_t best_move;
     uint32_t nodes;
     typedef array_t<uint8_t, max_moves> score_array_t;
@@ -258,11 +290,15 @@ public:
     move_t order_moves(move_array_t &moves, score_array_t &scores, uint32_t idx);
     int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
 
-    // eval.cpp
-    template <color_t color>
-    int32_t count_material();
-    int32_t eval();
-
     // uci.cpp
     void uci();
+
+    // precomp.cpp
+    static void gen_precomp_data();
+
+    // test.cpp
+    uint64_t perft(uint32_t depth, bool root = true);
+    void test_movegen();
+    void test_transposition_table();
+
 };
