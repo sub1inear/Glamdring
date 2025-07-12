@@ -90,30 +90,30 @@ static uint64_t gen_bishop_moves(chess_t::square_t square, uint64_t blockers) {
     }
     return moves;
 }
-static void print_pext(std::ofstream &fout, bool rook) {
+static void print_pext(FILE *fout, bool rook) {
     static uint64_t offset = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
         uint64_t idx = offset;
-        fout << "    { " << mask << "ull, " << "&pext_move_data[" << idx << "] },\n";
+        fprintf(fout, "    { %lluull, &pext_move_data[%llu] },\n", mask, idx);
         uint64_t size = 1ull << _mm_popcnt_u64(mask); // count 1's in mask
         offset += size;
     }
 }
-static void print_pext_move_data(std::ofstream &fout, bool rook) {
+static void print_pext_move_data(FILE *fout, bool rook) {
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
         uint64_t size = 1ull << _mm_popcnt_u64(mask);
         for (uint32_t i = 0; i < size; i++, total++) {
             if (total % 8 == 0) {
-                fout << "    ";
+                fputs("    ", fout);
             }
             uint64_t blockers = _pdep_u64(i, mask); // deposit bits according to mask
             uint64_t moves = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
-            fout << moves << "ull, ";
+            fprintf(fout, "%lluull, ", moves);
             if (total % 8 == 7) {
-                fout << '\n';
+                fputc('\n', fout);
             }
         }        
     }
@@ -186,14 +186,14 @@ static uint64_t gen_king_moves_slow(chess_t::square_t square) {
     }
     return moves;
 }
-static void print_non_magic_data(std::ofstream &fout, uint64_t (*func)(chess_t::square_t square)) {
+static void print_non_magic_data(FILE *fout, uint64_t (*func)(chess_t::square_t square)) {
     for (uint32_t i = 0; i < 16; i++) {
-        fout << "    ";
+        fputs("    ", fout);
         for (uint32_t j = 0; j < 4; j++) {
             chess_t::square_t square = i * 4 + j;
-            fout << func(square) << "ull, ";
+            fprintf(fout, "%lluull, ", func(square));
         }
-        fout << '\n';                      
+        fputc('\n', fout);                      
     }
 }
 static uint64_t gen_pawn_attacks(chess_t::color_t color, chess_t::square_t square) {
@@ -205,17 +205,17 @@ static uint64_t gen_pawn_attacks(chess_t::color_t color, chess_t::square_t squar
     }
     return (pawn & ~file_h) << 9 | (pawn & ~file_a) << 7;
 }
-static void print_pawn_attack_data(std::ofstream &fout) {
+static void print_pawn_attack_data(FILE *fout) {
     for (uint32_t color = 0; color < 2; color++) {
-        fout << "    {";
+        fputs("    {", fout);
         for (uint32_t i = 0; i < 16; i++) {
-            fout << "\n    ";
+            fputs("\n    ", fout);
             for (uint32_t j = 0; j < 4; j++) {
                 chess_t::square_t square = i * 4 + j;
-                fout << gen_pawn_attacks((chess_t::color_t)color, square) << "ull, ";
+                fprintf(fout, "%lluull, ", gen_pawn_attacks((chess_t::color_t)color, square));
             }
         }
-        fout << "\n    },\n";
+        fputs("\n    },\n", fout);
     }
 }
 static uint64_t gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square) {
@@ -235,48 +235,64 @@ static uint64_t gen_sliding_between(chess_t::square_t start_square, chess_t::squ
         }
     }            
 }
-static void print_sliding_between_data(std::ofstream &fout) {
+static void print_sliding_between_data(FILE *fout) {
     for (chess_t::square_t start_square = 0; start_square < 64; start_square++) {
-        fout << "    {";
+        fputs("    {", fout);
         for (uint32_t i = 0; i < 16; i++) {
-            fout << "\n    ";
+            fputs("\n    ", fout);
             for (uint32_t j = 0; j < 4; j++) {
                 chess_t::square_t end_square = i * 4 + j;
-                fout << gen_sliding_between(start_square, end_square) << "ull, ";
+                fprintf(fout, "%lluull, ", gen_sliding_between(start_square, end_square));
             }
         }
-        fout << "\n    },\n";
+        fputs("\n    },\n", fout);
     }
 }
 
 void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    std::ofstream fout("data.cpp");
-    fout << "#include \"data.h\"\n\n" 
-            "namespace data {\n"
-            "const pext_t bishop_pext[] = {\n";
+    FILE *fout = fopen("data.cpp", "w");
+    fputs("#include \"data.h\"\n\n" 
+          "namespace data {\n"
+          "const pext_t bishop_pext[] = {\n",
+          fout
+    );
     print_pext(fout, false);
-    fout << "};"
-            "\nconst pext_t rook_pext[] = {\n";
+    fputs("};"
+          "\nconst pext_t rook_pext[] = {\n",
+          fout
+    );
     print_pext(fout, true);
-    fout << "};\n"
-            "const uint64_t pext_move_data[] = {\n";
+    fputs("};\n"
+          "const uint64_t pext_move_data[] = {\n",
+          fout
+    );
     print_pext_move_data(fout, false);
     print_pext_move_data(fout, true);
-    fout << "};\n"
-            "const uint64_t knight_move_data[] = {\n";
+    fputs("};\n"
+          "const uint64_t knight_move_data[] = {\n",
+          fout
+    );
     print_non_magic_data(fout, gen_knight_moves_slow);
-    fout << "};\n"
-            "const uint64_t king_move_data[] = {\n";
+    fputs("};\n"
+          "const uint64_t king_move_data[] = {\n",
+          fout
+    );
     print_non_magic_data(fout, gen_king_moves_slow);
-    fout << "};\n"
-            "const uint64_t pawn_attack_data[][64] = {\n";
+    fputs("};\n"
+          "const uint64_t pawn_attack_data[][64] = {\n",
+          fout
+    );
     print_pawn_attack_data(fout);
-    fout << "};\n"
-            "const uint64_t sliding_between_data[64][64] = {\n";
+    fputs("};\n"
+          "const uint64_t sliding_between_data[64][64] = {\n",
+          fout
+    );
     print_sliding_between_data(fout);
-    fout << "};\n"
-            "}";
+    fputs("};\n"
+          "}",
+          fout
+    );
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms\n";
+    printf("Took %lli ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 }
