@@ -82,37 +82,13 @@ void chess_t::test_transposition_table() {
     uint32_t failures = 0;
 
     constexpr uint64_t key = 1000;
-
     constexpr uint8_t depth = 1;
-
-    enum {
-        UPPERBOUND_ALPHA,
-        ALPHA,
-        EXACT,
-        BETA,
-        LOWERBOUND_BETA,
-    };
-
     constexpr move_t move = { 1, 2, move_t::QUIET };
-    constexpr transposition_table_t::transposition_result_t upperbound_result = { move, ALPHA };
-    constexpr transposition_table_t::transposition_result_t exact_result = { move, EXACT };
-    constexpr transposition_table_t::transposition_result_t lowerbound_result = { move, BETA };
+    constexpr transposition_table_t::transposition_result_t expected_result = { move, 0 };
 
-    transposition_table.store(exact_result, key, ALPHA, BETA, depth);
-    transposition_table_t::transposition_result_t result = transposition_table.lookup(key, ALPHA, ALPHA, depth);
-    failures += assert(exact_result, result, "Store (Exact Success)");
-    
-    transposition_table.table[key % transposition_table.size].data_xor_key = 0;
-    result = transposition_table.lookup(key, ALPHA, ALPHA, depth);
-    failures += assert(result.move.from, (packed_square_t)-1, "Corruption");
-
-    transposition_table.store(upperbound_result, key, ALPHA, BETA, depth);
-    result = transposition_table.lookup(key, UPPERBOUND_ALPHA, BETA, depth);
-    failures += assert(result.move.from, (packed_square_t)-1, "Upperbound Failure");
-
-    transposition_table.store(lowerbound_result, key, ALPHA, BETA, depth);
-    result = transposition_table.lookup(key, ALPHA, LOWERBOUND_BETA, depth);
-    failures += assert(result.move.from, (packed_square_t)-1, "Lowerbound Failure");
+    transposition_table.store(exact_result, key, -1, 1, depth);
+    transposition_table_t::transposition_result_t result = transposition_table.lookup(key);
+    failures += assert(expected_result, result, "Store");
 
 
     if (failures) {
