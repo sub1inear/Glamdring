@@ -86,8 +86,8 @@ void chess_t::test_transposition_table() {
     constexpr move_t move = { 1, 2, move_t::QUIET };
     constexpr transposition_table_t::transposition_result_t expected_result = { move, 0 };
 
-    transposition_table.store(exact_result, key, -1, 1, depth);
-    transposition_table_t::transposition_result_t result = transposition_table.lookup(key);
+    transposition_table.store(expected_result, key, -1, 1, depth);
+    transposition_table_t::transposition_result_t result = transposition_table.lookup(key).data.result;
     failures += assert(expected_result, result, "Store");
 
 

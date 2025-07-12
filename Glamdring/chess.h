@@ -246,7 +246,7 @@ public:
         ~transposition_table_t() {
             delete[] table;
         }
-        transposition_result_t lookup(uint64_t key, int32_t alpha, int32_t beta, uint8_t depth);
+        transposition_entry_t lookup(uint64_t key);
         void store(transposition_result_t result, uint64_t key, int32_t alpha, int32_t beta, uint8_t depth);
     };
     transposition_table_t transposition_table;
