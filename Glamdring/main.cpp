@@ -4,7 +4,7 @@
 int main(int argc, char **argv) {
     chess_t chess;
     
-    chess.test_transposition_table();
+    chess.gen_precomp_data();
 
 
 }

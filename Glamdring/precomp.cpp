@@ -209,7 +209,7 @@ static void print_pawn_attack_data(FILE *fout) {
     for (uint32_t color = 0; color < 2; color++) {
         fputs("    {", fout);
         for (uint32_t i = 0; i < 16; i++) {
-            fputs("\n    ", fout);
+            fputs("\n        ", fout);
             for (uint32_t j = 0; j < 4; j++) {
                 chess_t::square_t square = i * 4 + j;
                 fprintf(fout, "%lluull, ", gen_pawn_attacks((chess_t::color_t)color, square));
@@ -239,7 +239,7 @@ static void print_sliding_between_data(FILE *fout) {
     for (chess_t::square_t start_square = 0; start_square < 64; start_square++) {
         fputs("    {", fout);
         for (uint32_t i = 0; i < 16; i++) {
-            fputs("\n    ", fout);
+            fputs("\n        ", fout);
             for (uint32_t j = 0; j < 4; j++) {
                 chess_t::square_t end_square = i * 4 + j;
                 fprintf(fout, "%lluull, ", gen_sliding_between(start_square, end_square));
