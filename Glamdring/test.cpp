@@ -66,13 +66,15 @@ void chess_t::test_movegen() {
 }
 
 template <typename T>
-static bool assert(T expected, T result, const char *name) {
+static bool assert(T expected, T result, const char *fmt, ...) {
     if (memcmp(&expected, &result, sizeof(expected))) {
-        printf("\x1b[31m"
-               "'%s' test failed."
-               "\x1b[0m\n",
-                name
-        );
+        va_list ap;
+        va_start(ap, fmt);
+        fputs("\x1b[31m" "'", stdout);
+        vprintf(fmt, ap);
+        puts("' test failed." "\x1b[0m\n");
+                
+        va_end(ap);
         return true;
     }
     return false;
@@ -89,6 +91,17 @@ void chess_t::test_transposition_table() {
     transposition_table.store(expected_result, key, -1, 1, depth);
     transposition_table_t::transposition_result_t result = transposition_table.lookup(key).data.result;
     failures += assert(expected_result, result, "Store");
+
+    for (data::zobrist_test_t zobrist_pos : data::zobrist_test_data ) {
+        board.load_fen(zobrist_pos.fen);
+        failures += assert(board.get_polyglot_key(), zobrist_pos.zobrist_key, zobrist_pos.fen);
+        
+        board.load_fen(data::startpos_fen);
+        for (uint8_t i = 0; i < zobrist_pos.moves_size; i++) {
+            board.make_move(zobrist_pos.moves[i]);
+        }
+        failures += assert(board.get_polyglot_key(), zobrist_pos.zobrist_key, "%s Moves", zobrist_pos.fen);
+    }
 
 
     if (failures) {

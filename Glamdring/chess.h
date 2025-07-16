@@ -17,7 +17,7 @@ template <typename T, uint32_t S>
 class array_t {
 public:
     T data[S];
-    uint32_t size;
+    uint32_t size; // TODO: replace with end pointer
 
     array_t(uint32_t size = 0) : size(size) {}
     void add(T item) {
@@ -77,7 +77,6 @@ public:
     static constexpr uint32_t max_moves = 218; // https://chess.stackexchange.com/questions/4490/maximum-possible-movement-in-a-turn
     static constexpr int32_t eval_max = INT32_MAX;
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
-    static constexpr uint16_t null_packed_move = 0;
 
     chess_t() {}
 
@@ -116,6 +115,7 @@ public:
         uint64_t bitboards[2][6];
 
         struct game_state_t {
+            uint64_t zobrist_key;
             uint32_t half_move_clock;
             uint32_t full_moves;
             square_t en_passant;
@@ -129,18 +129,12 @@ public:
         piece_color_t get_piece(square_t square) {
             return board[square];
         }
-        void set_piece(square_t square, piece_color_t piece) {
-            board[square] = piece;
-            bitboards[piece.color][piece.piece] |= 1ull << square;
-        }
-        void clear_piece_bitboard(square_t square, piece_color_t piece) {
-            bitboards[piece.color][piece.piece] &= ~(1ull << square);
-        }
-        void clear_piece(square_t square, piece_color_t piece) {
-            board[square].piece = CLEAR;
-            clear_piece_bitboard(square, piece);
-        }
+        void set_piece(square_t square, piece_color_t piece);
+        void clear_piece_bitboard(square_t square, piece_color_t piece);
+        void clear_piece(square_t square, piece_color_t piece);
         
+        uint64_t get_polyglot_key();
+
         void print(FILE *out = stdout);
         void clear();
         void load_fen(const char *fen);

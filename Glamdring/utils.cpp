@@ -49,7 +49,8 @@ void chess_t::print_square(square_t square, FILE *out) {
 void chess_t::print_bitboard(uint64_t bitboard) {
     for (uint32_t i = 0; i < 8; i++) {
         for (uint32_t j = 0; j < 8; j++) {
-            putc('0' + (bitboard >> (i * 8 + j)) & 0x1, stdout);
+            putc('0' + ((bitboard >> (i * 8 + j)) & 0x1), stdout);
+            putc(' ', stdout);
         }
         putc('\n', stdout);
     }

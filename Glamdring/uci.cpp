@@ -1,4 +1,5 @@
 #include "chess.h"
+#include "data.h"
 
 static void output_to_gui(const char *fmt, FILE *log, ...) {
     va_list args;
@@ -17,7 +18,7 @@ static void newline_to_gui(FILE *log) {
 void chess_t::uci() {
     FILE *log = fopen("glamdring.log", "w");
 
-    board.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); // TODO: unify startpos fen in chess_t
+    board.load_fen(data::startpos_fen);
     while (true) {
         char input[4096];
         gets_s(input);
@@ -36,7 +37,7 @@ void chess_t::uci() {
                 char *moves = args ? strstr(args, "moves") : nullptr;
                 if (position) {
                     if (!strcmp(position, "startpos")) {
-                        board.load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                        board.load_fen(data::startpos_fen);
                     } else if (!strcmp(position, "fen")) {
                         if (moves) {
                             // null delimit args
