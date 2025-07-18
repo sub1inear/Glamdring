@@ -257,7 +257,7 @@ uint64_t chess_t::gen_pinning_danger(chess_t::square_t square) {
     return pinning_danger;
 }
 
-void chess_t::gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies) {    
+void chess_t::gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t allies, uint64_t enemies) {    
     
     memset(pin_lines, 0xff, 64 * sizeof(uint64_t));
     

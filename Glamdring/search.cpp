@@ -1,7 +1,7 @@
 #include "chess.h"
 #include "data.h"
 
-chess_t::move_t chess_t::order_moves(move_array_t &moves, uint8_t *scores, uint32_t i) {
+chess_t::move_t chess_t::order_moves(move_array_t &moves, uint8_t (&scores)[max_moves], uint32_t i) {
     // selection sort is O(n^2) but becomes O(n) with beta cutoff
     // inspired by https://rustic-chess.org/search/ordering/how.html
     for (uint32_t j = i + 1; j < moves.size; j++) {

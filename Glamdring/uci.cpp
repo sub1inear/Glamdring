@@ -60,7 +60,7 @@ void chess_t::uci() {
             } else if (!strcmp(command, "go")) {
                 search(6);
 
-                output_to_gui("bestmove ", log, nodes);
+                output_to_gui("bestmove ", log);
                 best_move.print();
                 best_move.print(log);
                 newline_to_gui(log);

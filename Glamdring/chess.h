@@ -269,7 +269,7 @@ public:
     uint64_t gen_king_danger_squares(uint64_t blockers);
     uint64_t gen_pinning_danger(square_t square);
     // generates all pin lines for a square
-    void gen_pins(uint64_t *pin_lines, square_t square, uint64_t allies, uint64_t enemies); // TODO: use reference?
+    void gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t allies, uint64_t enemies); // TODO: use reference?
     move_array_t gen_moves();
     
     // eval.cpp
@@ -279,7 +279,7 @@ public:
 
     // search.cpp
     move_t best_move;
-    move_t order_moves(move_array_t &moves, uint8_t *scores, uint32_t idx);
+    move_t order_moves(move_array_t &moves, uint8_t (&scores)[max_moves], uint32_t idx);
     int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
 
     // uci.cpp
