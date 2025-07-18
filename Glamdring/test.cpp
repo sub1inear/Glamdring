@@ -85,11 +85,12 @@ void chess_t::test_transposition_table() {
 
     constexpr uint64_t key = 1000;
     constexpr uint8_t depth = 1;
-    constexpr move_t move = { 1, 2, move_t::QUIET };
-    constexpr transposition_table_t::transposition_result_t expected_result = { move, 0 };
+    constexpr uint8_t move_idx = 2;
+    constexpr int32_t eval = 0;
+    constexpr transposition_table_t::transposition_data_t expected_result = { eval, move_idx, depth, transposition_table_t::EXACT };
 
-    transposition_table.store(expected_result, key, -1, 1, depth);
-    transposition_table_t::transposition_result_t result = transposition_table.lookup(key).data.result;
+    transposition_table.store(eval, move_idx, key, -1, 1, depth);
+    transposition_table_t::transposition_data_t result = transposition_table.lookup(key).data;
     failures += assert(expected_result, result, "Store");
 
     for (data::zobrist_test_t zobrist_pos : data::zobrist_test_data ) {
