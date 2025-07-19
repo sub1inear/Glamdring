@@ -231,12 +231,8 @@ public:
         transposition_entry_t *table;
         static constexpr uint64_t size = 512 * 1024 * 1024; // must be power of two to turn key % size into key & (size - 1)
         static constexpr uint64_t entries = size / sizeof(transposition_entry_t);
-        void clear() {
-            memset(table, 0, size);
-        }
         transposition_table_t() {
-            table = new transposition_entry_t[entries];
-            clear();
+            table = new transposition_entry_t[entries] {};
         }
         ~transposition_table_t() {
             delete[] table;

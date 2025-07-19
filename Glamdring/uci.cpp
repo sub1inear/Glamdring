@@ -55,8 +55,6 @@ void chess_t::uci() {
                         }
                     }
                 }
-            } else if (!strcmp(command, "ucinewgame")) { 
-                transposition_table.clear();
             } else if (!strcmp(command, "go")) {
                 search(6);
 
