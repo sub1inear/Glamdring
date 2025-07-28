@@ -7,15 +7,15 @@ uint64_t chess_t::perft(uint32_t depth, bool root) {
     if (depth == 1) {
         return moves.size;
     }
-    for (uint32_t i = 0; i < moves.size; i++) {
-        board.make_move(moves[i]);
+    for (move_t &move : moves) {
+        board.make_move(move);
         uint64_t new_moves = perft(depth - 1, false);
         if (root) {
-            moves[i].print();
+            move.print();
             printf(": %llu\n", new_moves);
         }
         num_moves += new_moves;
-        board.undo_move(moves[i]);
+        board.undo_move(move);
     }
     return num_moves;
 }

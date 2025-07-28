@@ -5,6 +5,8 @@
 #include <limits>
 #include <chrono>
 #include <utility>
+#include <thread>
+#include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <cctype>
@@ -33,6 +35,9 @@ public:
     T *pop() {
         size--;
         return last(); 
+    }
+    T *begin() {
+        return &data[0];
     }
     T *end() {
         return &data[size];

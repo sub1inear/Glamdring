@@ -70,8 +70,8 @@ bool chess_t::opening_book_t::lookup(board_t &board, move_t &best_move) {
                 entries.size++;
             }
             uint32_t sum = 0;
-            for (uint32_t i = 0; i < entries.size; i++) {
-                sum += entries[i].weight;
+            for (polyglot_entry_t &entry : entries) {
+                sum += entry.weight;
             }
 
             if (sum == 0) {
@@ -81,12 +81,12 @@ bool chess_t::opening_book_t::lookup(board_t &board, move_t &best_move) {
             uint32_t r = rand() % sum;
             
             uint32_t min = 0;
-            for (uint32_t i = 0; i < entries.size; i++) {
-                if (min + entries[i].weight > r) {
-                    best_move = { board, entries[i].move };
+            for (polyglot_entry_t &entry : entries) {
+                if (min + entry.weight > r) {
+                    best_move = { board, entry.move };
                     return true;        
                 }
-                min += entries[i].weight;
+                min += entry.weight;
             }
             break;
             
