@@ -26,7 +26,7 @@ void chess_t::uci() {
 
     board.load_fen(data::startpos_fen);
     while (true) {
-        char input[4096];
+        char input[64 * 1024];
         gets_s(input);
         
         fprintf(log, "%s\n", input);
