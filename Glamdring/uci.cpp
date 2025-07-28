@@ -19,7 +19,7 @@ void chess_t::uci() {
     FILE *log = fopen("glamdring.log", "w");
 
     if (!opening_book.set_book("../../OpeningBooks/Titans.bin")) {
-        fprintf(log, "set_opening_book() failed: %s\n", strerror(errno));
+        output_to_gui("set_opening_book() failed: %s\n", log, strerror(errno));
         fflush(log);
         return;
     }
