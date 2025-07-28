@@ -5,6 +5,4 @@ int main(int argc, char **argv) {
     chess_t chess;
     
     chess.uci();
-
-
 }

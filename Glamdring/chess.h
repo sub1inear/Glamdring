@@ -34,6 +34,9 @@ public:
         size--;
         return last(); 
     }
+    T *end() {
+        return &data[size];
+    }
     T &operator[](uint32_t idx) {
         return data[idx];
     }
@@ -79,7 +82,9 @@ public:
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
     static constexpr int32_t transposition_table_move_score = 100;
 
-    chess_t() {}
+    chess_t() {
+        srand((int32_t)std::chrono::steady_clock::now().time_since_epoch().count());
+    }
 
     // TODO: use 1 byte
     class piece_color_t {
@@ -144,6 +149,7 @@ public:
     };
     board_t board;
 
+    // move.cpp
     class move_t {
     public:
         /*
@@ -177,8 +183,14 @@ public:
         packed_square_t to/*: 6 bits*/;
         move_flags_t flags/*: 4 bits*/;
         move_t() {}
+        
         constexpr move_t(square_t from, square_t to, move_flags_t flags) : from(from), to(to), flags(flags) {}
-        move_t(board_t &board, const char *str); // utils.cpp
+
+        move_t(board_t &board, const char *str);
+        move_t(board_t &board, uint16_t polyglot_move);
+
+        void compute_flags(board_t &board, move_flags_t promotion, const chess_t::square_t (&king_castling_end_squares)[][2]);
+
         bool is_capture() {
             return flags & CAPTURE;
         }
@@ -194,16 +206,11 @@ public:
         piece_t get_promotion() {
             return (piece_t)((flags & 0x3) + 1); // TODO: remove + 1 by starting piece_t with knight?
         }
-        void print(FILE *out = stdout) {
-            print_square(from, out);
-            print_square(to, out);
-            if (is_promotion()) {
-                putc(piece_to_char(get_promotion()), out);
-            }
-        }
+        void print(FILE *out = stdout);
     };
     typedef array_t<move_t, max_moves> move_array_t;
 
+    // transposition_table.cpp
     class transposition_table_t {
     public:
         enum tranposition_type_t : uint8_t {
@@ -242,6 +249,29 @@ public:
     };
     transposition_table_t transposition_table;
 
+    // opening_book.cpp
+    class opening_book_t {
+    public:
+        FILE *book;
+
+        int32_t last;
+        
+        class polyglot_entry_t {
+        public:
+            uint64_t zobrist_key;
+            uint16_t move;
+            uint16_t weight;
+            uint16_t learn;
+            void byteswap_key();
+            void byteswap_non_key();
+        };
+
+        bool set_book(const char *filename);
+        void parse_polyglot_move(uint16_t move);
+        bool lookup(board_t &board, move_t &best_move);
+    };
+    opening_book_t opening_book;
+
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
@@ -276,7 +306,8 @@ public:
     // search.cpp
     move_t best_move;
     move_t order_moves(move_array_t &moves, uint8_t (&scores)[max_moves], uint32_t idx);
-    int32_t search(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
+    int32_t negamax(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
+    int32_t search(int32_t depth);
 
     // uci.cpp
     void uci();

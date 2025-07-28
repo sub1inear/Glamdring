@@ -18,6 +18,12 @@ static void newline_to_gui(FILE *log) {
 void chess_t::uci() {
     FILE *log = fopen("glamdring.log", "w");
 
+    if (!opening_book.set_book("../../OpeningBooks/Titans.bin")) {
+        fprintf(log, "set_opening_book() failed: %s\n", strerror(errno));
+        fflush(log);
+        return;
+    }
+
     board.load_fen(data::startpos_fen);
     while (true) {
         char input[4096];

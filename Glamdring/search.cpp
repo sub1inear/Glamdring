@@ -13,7 +13,7 @@ chess_t::move_t chess_t::order_moves(move_array_t &moves, uint8_t (&scores)[max_
     return moves[i];
 }
 
-int32_t chess_t::search(int32_t depth, bool root, int32_t alpha, int32_t beta) {
+int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) {
 
     // lookup in transposition table and return if entry matches constraints
     uint64_t zobrist_key = board.game_state_stack.last()->zobrist_key;
@@ -74,7 +74,7 @@ int32_t chess_t::search(int32_t depth, bool root, int32_t alpha, int32_t beta) {
         move_t move = order_moves(moves, scores, i);
         
         board.make_move(move);
-        int32_t move_eval = -search(depth - 1, false, -beta, -alpha);
+        int32_t move_eval = -negamax(depth - 1, false, -beta, -alpha);
         board.undo_move(move);
 
         if (move_eval > best_eval) {
@@ -91,4 +91,13 @@ int32_t chess_t::search(int32_t depth, bool root, int32_t alpha, int32_t beta) {
     }
     transposition_table.store(best_eval, move_idx, zobrist_key, original_alpha, beta, depth);
     return best_eval;
+}
+
+int32_t chess_t::search(int32_t depth) {
+    if (board.game_state_stack.size < 10) {
+        if (opening_book.lookup(board, best_move)) {
+            return 0;
+        }
+    }
+    return negamax(depth);
 }

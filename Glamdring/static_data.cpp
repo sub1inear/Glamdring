@@ -19,6 +19,10 @@ const chess_t::square_t king_castling_end_squares[][2] = {
     { chess_t::G1, chess_t::C1, },
     { chess_t::G8, chess_t::C8, },
 };
+const chess_t::square_t king_castling_end_squares_polyglot[][2] = {
+    { chess_t::H1, chess_t::A1, },
+    { chess_t::H8, chess_t::A8, },
+};
 const chess_t::square_t rook_castling_start_squares[][2] = {
     { chess_t::H1, chess_t::A1 },
     { chess_t::H8, chess_t::A8 },

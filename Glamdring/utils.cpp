@@ -56,35 +56,3 @@ void chess_t::print_bitboard(uint64_t bitboard) {
     }
     putc('\n', stdout);
 }
-
-chess_t::move_t::move_t(board_t &board, const char *str) {
-    from = file_rank_to_square(str[0], str[1]);
-    to = file_rank_to_square(str[2], str[3]);
-    if (to == board.game_state_stack.last()->en_passant) {
-        flags = EN_PASSANT_CAPTURE;    
-    } else {
-        flags = QUIET;
-        piece_t start_piece = board.get_piece(from).piece;
-        if (start_piece == KING) {
-            color_t to_move = board.game_state_stack.last()->to_move;
-            if (from == data::king_castling_start_squares[to_move]) {
-                if (to == data::king_castling_end_squares[to_move][KINGSIDE]) {
-                    flags = KING_CASTLE;
-                } else if (to == data::king_castling_end_squares[to_move][QUEENSIDE]) {
-                    flags = QUEEN_CASTLE;
-                }
-            }
-        }
-        if (start_piece == PAWN) {
-            if (abs(from - to) == 16) {
-                flags = DOUBLE_PAWN_PUSH;
-            }
-        }
-        if (board.get_piece(to).piece != CLEAR) {
-            flags = (move_flags_t)(flags | CAPTURE);
-        }
-        if (str[4] != '\0') {
-            flags = (move_flags_t)(flags | PROMOTION | (char_to_piece(str[4]) - 1));
-        }
-    }
-}
