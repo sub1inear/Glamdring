@@ -7,6 +7,7 @@
 #include <utility>
 #include <thread>
 #include <atomic>
+#include <future>
 #include <cstdint>
 #include <cstdio>
 #include <cctype>
@@ -309,12 +310,16 @@ public:
     int32_t eval();
 
     // search.cpp
+    std::atomic<bool> searching;
     move_t best_move;
     move_t order_moves(move_array_t &moves, uint8_t (&scores)[max_moves], uint32_t idx);
     int32_t negamax(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
-    int32_t search(int32_t depth);
+    int32_t search();
+    int32_t search_timed(std::chrono::milliseconds time);
+    void stop_search();
 
     // uci.cpp
+    int32_t search_uci(std::chrono::milliseconds time, bool infinite, FILE *log);
     void uci();
 
     // precomp.cpp

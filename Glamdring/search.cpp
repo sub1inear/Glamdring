@@ -14,6 +14,9 @@ chess_t::move_t chess_t::order_moves(move_array_t &moves, uint8_t (&scores)[max_
 }
 
 int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) {
+    if (!searching) {
+        return 0;
+    }
 
     // lookup in transposition table and return if entry matches constraints
     uint64_t zobrist_key = board.game_state_stack.last()->zobrist_key;
@@ -84,6 +87,11 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
                 move_idx = i;
             }
         }
+
+        if (!searching) {
+            return best_eval;
+        }
+
         alpha = std::max(alpha, move_eval);
         if (alpha >= beta) {
             break; // beta cutoff
@@ -93,11 +101,35 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
     return best_eval;
 }
 
-int32_t chess_t::search(int32_t depth) {
+int32_t chess_t::search() {
+    searching = true;
     if (board.game_state_stack.size < 10) {
         if (opening_book.lookup(board, best_move)) {
             return 0;
         }
     }
-    return negamax(depth);
+    int32_t eval;
+    for (int32_t depth = 1; depth < INT32_MAX; depth++) {
+        move_t old_best_move = best_move;
+        eval = negamax(depth);
+        if (!searching) {
+            best_move = old_best_move; // TODO: use partial search results
+            break;
+        }
+    }
+    return eval;
+
+}
+
+int32_t chess_t::search_timed(std::chrono::milliseconds time) {
+    std::future<int32_t> eval = std::async(std::launch::async, &chess_t::search, this);
+    std::future_status status = eval.wait_for(time);
+    if (status == std::future_status::timeout) {
+        stop_search();
+    }
+    return eval.get();
+}
+
+void chess_t::stop_search() {
+    searching = false;
 }
