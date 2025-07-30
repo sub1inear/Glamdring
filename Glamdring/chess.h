@@ -312,7 +312,6 @@ public:
     int32_t eval();
 
     // search.cpp
-
     move_t best_move;
     uint64_t nodes;
 

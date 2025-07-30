@@ -19,8 +19,7 @@ chess_t::move_t::move_t(board_t &board, uint16_t polyglot_move) {
 
     compute_flags(board, promotion ? (move_flags_t)(PROMOTION + promotion) : QUIET, data::king_castling_end_squares_polyglot);
     if (is_castling()) {
-        // TODO: use get_castling() instead of subtraction
-        to = data::king_castling_end_squares[board.game_state_stack.last()->to_move][flags - KING_CASTLE];
+        to = data::king_castling_end_squares[board.game_state_stack.last()->to_move][get_castling()];
     }
 }
 
