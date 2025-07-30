@@ -88,9 +88,7 @@ public:
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
     static constexpr int32_t transposition_table_move_score = 100;
 
-    chess_t() {
-        srand((int32_t)std::chrono::steady_clock::now().time_since_epoch().count());
-    }
+    chess_t() {}
 
     // TODO: use 1 byte
     class piece_color_t {
@@ -159,6 +157,7 @@ public:
     class move_t {
     public:
         /*
+        TODO: Add separate bit for castling and perhaps a special value for a null move
         From https://www.chessprogramming.org/Encoding_Moves#From-To_Based
         Binary Format:
         0b x x x x
@@ -271,7 +270,10 @@ public:
             void byteswap_key();
             void byteswap_non_key();
         };
-
+        opening_book_t() {
+            // TODO:: use C++ <random>
+            srand((int32_t)std::chrono::steady_clock::now().time_since_epoch().count());
+        }
         bool set_book(const char *filename);
         void parse_polyglot_move(uint16_t move);
         bool lookup(board_t &board, move_t &best_move);
@@ -310,16 +312,36 @@ public:
     int32_t eval();
 
     // search.cpp
-    std::atomic<bool> searching;
+
     move_t best_move;
+    uint64_t nodes;
+
+    std::atomic<bool> searching;
     move_t order_moves(move_array_t &moves, uint8_t (&scores)[max_moves], uint32_t idx);
-    int32_t negamax(int32_t depth, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
-    int32_t search();
-    int32_t search_timed(std::chrono::milliseconds time);
+    int32_t negamax(uint32_t depth, uint64_t max_nodes, bool root = true, int32_t alpha = eval_min, int32_t beta = eval_max);
+    int32_t search(uint32_t max_depth, uint64_t max_nodes, bool use_opening_book = true);
+    int32_t search_timed(std::chrono::milliseconds time, uint32_t max_depth, uint64_t max_nodes, bool use_opening_book = true);
     void stop_search();
 
+    // timeman.cpp
+
+    std::chrono::milliseconds get_search_time(std::chrono::milliseconds time, std::chrono::milliseconds inc, std::chrono::milliseconds input_move_time);
+
     // uci.cpp
-    int32_t search_uci(std::chrono::milliseconds time, bool infinite, FILE *log);
+    struct go_options_t {
+        std::chrono::milliseconds time[2];
+        std::chrono::milliseconds inc[2];
+               
+        bool infinite;
+
+        uint32_t max_depth;
+        uint32_t max_nodes;
+        std::chrono::milliseconds input_move_time;
+    };
+
+    go_options_t parse_go_command();
+    void parse_position_command();
+    int32_t search_uci(std::chrono::milliseconds time, bool infinite, uint32_t max_depth, uint64_t max_nodes, FILE *log);
     void uci();
 
     // precomp.cpp

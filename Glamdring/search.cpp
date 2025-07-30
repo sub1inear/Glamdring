@@ -13,7 +13,7 @@ chess_t::move_t chess_t::order_moves(move_array_t &moves, uint8_t (&scores)[max_
     return moves[i];
 }
 
-int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) {
+int32_t chess_t::negamax(uint32_t depth, uint64_t max_nodes, bool root, int32_t alpha, int32_t beta) {
     if (!searching) {
         return 0;
     }
@@ -47,6 +47,7 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
     move_array_t moves = gen_moves();
     
     if (moves.size == 0) {
+        // TODO: add draw detection
         return eval_min;
     }
     if (depth == 0) {
@@ -73,11 +74,12 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
     
     int32_t original_alpha = alpha;
 
-    for (uint32_t i = 0; i < moves.size; i++) {
+    for (uint32_t i = 0; i < moves.size; i++, nodes++) {
+
         move_t move = order_moves(moves, scores, i);
         
         board.make_move(move);
-        int32_t move_eval = -negamax(depth - 1, false, -beta, -alpha);
+        int32_t move_eval = -negamax(depth - 1, max_nodes, false, -beta, -alpha);
         board.undo_move(move);
 
         if (move_eval > best_eval) {
@@ -88,7 +90,7 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
             }
         }
 
-        if (!searching) {
+        if (!searching || nodes >= max_nodes) {
             return best_eval;
         }
 
@@ -101,28 +103,32 @@ int32_t chess_t::negamax(int32_t depth, bool root, int32_t alpha, int32_t beta) 
     return best_eval;
 }
 
-int32_t chess_t::search() {
+int32_t chess_t::search(uint32_t max_depth, uint64_t max_nodes, bool use_opening_book) {
     searching = true;
-    if (board.game_state_stack.size < 10) {
+    nodes = 0;
+    if (use_opening_book && board.game_state_stack.size < 10) {
         if (opening_book.lookup(board, best_move)) {
+            stop_search();
             return 0;
         }
     }
+    // TODO: use partial search results
     int32_t eval;
-    for (int32_t depth = 1; depth < INT32_MAX; depth++) {
+    for (uint32_t depth = 1; depth < max_depth; depth++) {
         move_t old_best_move = best_move;
-        eval = negamax(depth);
-        if (!searching) {
-            best_move = old_best_move; // TODO: use partial search results
+        eval = negamax(depth, max_nodes);
+        if (!searching || nodes >= max_nodes) {
+            best_move = old_best_move;
             break;
         }
     }
+    stop_search();
     return eval;
 
 }
 
-int32_t chess_t::search_timed(std::chrono::milliseconds time) {
-    std::future<int32_t> eval = std::async(std::launch::async, &chess_t::search, this);
+int32_t chess_t::search_timed(std::chrono::milliseconds time, uint32_t max_depth, uint64_t max_nodes, bool use_opening_book) {
+    std::future<int32_t> eval = std::async(std::launch::async, &chess_t::search, this, max_depth, max_nodes, use_opening_book);
     std::future_status status = eval.wait_for(time);
     if (status == std::future_status::timeout) {
         stop_search();

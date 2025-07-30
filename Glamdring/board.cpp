@@ -59,6 +59,7 @@ void chess_t::board_t::print(FILE *out) {
         }
         fputc('\n', out);
     }
+    // TODO: fix file marker alignment with board
     fprintf(out,
             "\x1b[38;5;240m"
             "a b c d e f g h"
