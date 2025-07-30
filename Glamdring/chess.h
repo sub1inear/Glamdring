@@ -88,6 +88,8 @@ public:
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
     static constexpr int32_t transposition_table_move_score = 100;
 
+    FILE *log = fopen("glamdring.log", "w");
+
     chess_t() {}
 
     // TODO: use 1 byte
@@ -327,6 +329,13 @@ public:
     std::chrono::milliseconds get_search_time(std::chrono::milliseconds time, std::chrono::milliseconds inc, std::chrono::milliseconds input_move_time);
 
     // uci.cpp
+    template <typename ...A>
+    void log_uci(const char *fmt, A... args);
+    void flush_uci();
+    void print_uci(const char *str);
+    template <typename ...A>
+    void print_uci(const char *fmt, A... args);
+
     struct go_options_t {
         std::chrono::milliseconds time[2];
         std::chrono::milliseconds inc[2];
