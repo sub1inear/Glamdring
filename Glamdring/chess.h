@@ -263,6 +263,8 @@ public:
 
         int32_t last;
         
+        uint32_t seed;
+
         class polyglot_entry_t {
         public:
             uint64_t zobrist_key;
@@ -273,9 +275,10 @@ public:
             void byteswap_non_key();
         };
         opening_book_t() {
-            // TODO:: use C++ <random>
-            srand((int32_t)std::chrono::steady_clock::now().time_since_epoch().count());
+            puts("setting seed");
+            seed = (uint32_t)std::chrono::steady_clock::now().time_since_epoch().count();
         }
+        uint32_t random();
         bool set_book(const char *filename);
         void parse_polyglot_move(uint16_t move);
         bool lookup(board_t &board, move_t &best_move);

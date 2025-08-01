@@ -10,6 +10,11 @@ void chess_t::opening_book_t::polyglot_entry_t::byteswap_non_key() {
     learn = _byteswap_ushort(learn);
 }
 
+uint32_t chess_t::opening_book_t::random() {
+    puts("calling random");
+    return seed = seed * 69069u + 1u;
+}
+
 bool chess_t::opening_book_t::set_book(const char *filename) {
     book = fopen(filename, "r");
     if (book == nullptr) {
@@ -78,7 +83,7 @@ bool chess_t::opening_book_t::lookup(board_t &board, move_t &best_move) {
                 break;
             }
 
-            uint32_t r = rand() % sum;
+            uint32_t r = random() % sum;
             
             uint32_t min = 0;
             for (polyglot_entry_t &entry : entries) {
