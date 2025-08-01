@@ -88,9 +88,16 @@ public:
     static constexpr int32_t eval_min = -eval_max; // -eval_min with INT32_MIN would overflow
     static constexpr int32_t transposition_table_move_score = 100;
 
-    FILE *log = fopen("glamdring.log", "w");
+    FILE *log;
 
-    chess_t() {}
+    chess_t() {
+        log = fopen("glamdring.log", "w");
+        if (log == nullptr) {
+            // use printf for consistency with opening book failure
+            printf("fopen() in chess_t::chess_t() failed: %s", strerror(errno));
+            exit(1);
+        }
+    }
 
     // TODO: use 1 byte
     class piece_color_t {
@@ -332,12 +339,9 @@ public:
     std::chrono::milliseconds get_search_time(std::chrono::milliseconds time, std::chrono::milliseconds inc, std::chrono::milliseconds input_move_time);
 
     // uci.cpp
-    template <typename ...A>
-    void log_uci(const char *fmt, A... args);
+    void log_uci(const char *fmt, ...);
     void flush_uci();
-    void print_uci(const char *str);
-    template <typename ...A>
-    void print_uci(const char *fmt, A... args);
+    void print_uci(const char *fmt, ...);
 
     struct go_options_t {
         std::chrono::milliseconds time[2];

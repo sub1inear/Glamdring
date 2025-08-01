@@ -1,27 +1,29 @@
 #include "chess.h"
 #include "data.h"
 
-template <typename ...A>
-void chess_t::log_uci(const char *str, A... args) {
-    fprintf(log, str, args...);
+void chess_t::log_uci(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    
+    vfprintf(log, fmt, args);
     fflush(log);
+
+    va_end(args);
 }
 void chess_t::flush_uci() {
     fflush(stdout);
     fflush(log);
 }
 
-void chess_t::print_uci(const char *str) {
-    fputs(str, stdout);
-    fputs(str, log);
-    flush_uci();
-}
+void chess_t::print_uci(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
 
-template <typename ...A>
-void chess_t::print_uci(const char *fmt, A... args) {
-    printf(fmt, args...);
-    fprintf(log, fmt, args...);
+    vprintf(fmt, args);
+    vfprintf(log, fmt, args);
     flush_uci();
+
+    va_end(args);
 }
 
 chess_t::go_options_t chess_t::parse_go_command() {
