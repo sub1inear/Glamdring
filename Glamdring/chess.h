@@ -241,7 +241,8 @@ public:
             tranposition_type_t type;
             operator uint64_t() {
                 uint64_t result;
-                static_assert(sizeof(transposition_data_t) == sizeof(result));
+                static_assert(sizeof(transposition_data_t) == sizeof(result),
+                             "transposition_data_t must be equal in size to uint64_t.");
                 memcpy(&result, this, sizeof(result));
                 return result;
             }
