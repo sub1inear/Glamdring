@@ -13,7 +13,7 @@ inline void chess_t::serialize_bitboard(square_t square, uint64_t moves_bitboard
 
 // TODO: template if promotion is possible for any piece to speed up loop checks
 template <chess_t::color_t to_move> 
-void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves) {
+void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t (&pin_lines)[64], move_array_t &moves) {
     constexpr color_t other_to_move = (color_t)!to_move;
 
     uint64_t single_move = (to_move == WHITE ? pawns >> 8 : pawns << 8) & ~blockers;

@@ -295,7 +295,7 @@ public:
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
     template <color_t to_move>
-    void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t *pin_lines, move_array_t &moves);
+    void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t (&pin_lines)[64], move_array_t &moves);
     uint64_t gen_pawn_attacks(color_t to_move, square_t square);
     uint64_t gen_knight_moves(square_t square, uint64_t allies);
     uint64_t gen_bishop_moves(square_t square, uint64_t blockers, uint64_t allies);
