@@ -66,7 +66,7 @@ void chess_t::test_movegen() {
 }
 
 template <typename T>
-static bool assert(T expected, T result, const char *fmt, ...) {
+static bool assertf(T expected, T result, const char *fmt, ...) {
     if (memcmp(&expected, &result, sizeof(expected))) {
         va_list ap;
         va_start(ap, fmt);
@@ -91,17 +91,17 @@ void chess_t::test_transposition_table() {
 
     transposition_table.store(eval, move_idx, key, -1, 1, depth);
     transposition_table_t::transposition_data_t result = transposition_table.lookup(key).data;
-    failures += assert(expected_result, result, "Store");
+    failures += assertf(expected_result, result, "Store");
 
     for (data::zobrist_test_t zobrist_pos : data::zobrist_test_data ) {
         board.load_fen(zobrist_pos.fen);
-        failures += assert(board.get_polyglot_key(), zobrist_pos.zobrist_key, zobrist_pos.fen);
+        failures += assertf(board.get_polyglot_key(), zobrist_pos.zobrist_key, zobrist_pos.fen);
         
         board.load_fen(data::startpos_fen);
         for (uint8_t i = 0; i < zobrist_pos.moves_size; i++) {
             board.make_move(zobrist_pos.moves[i]);
         }
-        failures += assert(board.get_polyglot_key(), zobrist_pos.zobrist_key, "%s Moves", zobrist_pos.fen);
+        failures += assertf(board.get_polyglot_key(), zobrist_pos.zobrist_key, "%s Moves", zobrist_pos.fen);
     }
 
 

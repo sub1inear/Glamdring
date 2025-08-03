@@ -96,7 +96,7 @@ static void print_pext(FILE *fout, bool rook) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
         uint64_t idx = offset;
         fprintf(fout, "    { %lluull, &pext_move_data[%llu] },\n", mask, idx);
-        uint64_t size = 1ull << _mm_popcnt_u64(mask); // count 1's in mask
+        uint64_t size = 1ull << intrin::popcnt(mask); // count 1's in mask
         offset += size;
     }
 }
@@ -104,12 +104,12 @@ static void print_pext_move_data(FILE *fout, bool rook) {
     uint32_t total = 0;
     for (chess_t::square_t square = 0; square < 64; square++) {
         uint64_t mask = rook ? gen_rook_mask(square) : gen_bishop_mask(square);
-        uint64_t size = 1ull << _mm_popcnt_u64(mask);
+        uint64_t size = 1ull << intrin::popcnt(mask);
         for (uint32_t i = 0; i < size; i++, total++) {
             if (total % 8 == 0) {
                 fputs("    ", fout);
             }
-            uint64_t blockers = _pdep_u64(i, mask); // deposit bits according to mask
+            uint64_t blockers = intrin::pdep(i, mask); // deposit bits according to mask
             uint64_t moves = rook ? gen_rook_moves(square, blockers) : gen_bishop_moves(square, blockers);
             fprintf(fout, "%lluull, ", moves);
             if (total % 8 == 7) {

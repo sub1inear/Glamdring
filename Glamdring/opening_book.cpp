@@ -1,17 +1,16 @@
 #include "chess.h"
 
 void chess_t::opening_book_t::polyglot_entry_t::byteswap_key() {
-    zobrist_key = _byteswap_uint64(zobrist_key);
+    zobrist_key = intrin::byteswap(zobrist_key);
 }
 
 void chess_t::opening_book_t::polyglot_entry_t::byteswap_non_key() {
-    move = _byteswap_ushort(move);
-    weight = _byteswap_ushort(weight);
-    learn = _byteswap_ushort(learn);
+    move = intrin::byteswap(move);
+    weight = intrin::byteswap(weight);
+    learn = intrin::byteswap(learn);
 }
 
 uint32_t chess_t::opening_book_t::random() {
-    puts("calling random");
     return seed = seed * 69069u + 1u;
 }
 

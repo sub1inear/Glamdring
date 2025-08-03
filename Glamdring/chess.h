@@ -14,7 +14,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
-#include <immintrin.h>
+
+#include "compat.h"
 
 template <typename T, uint32_t S>
 class array_t {
@@ -282,7 +283,6 @@ public:
             void byteswap_non_key();
         };
         opening_book_t() {
-            puts("setting seed");
             seed = (uint32_t)std::chrono::steady_clock::now().time_since_epoch().count();
         }
         uint32_t random();
@@ -335,7 +335,6 @@ public:
     void stop_search();
 
     // timeman.cpp
-
     std::chrono::milliseconds get_search_time(std::chrono::milliseconds time, std::chrono::milliseconds inc, std::chrono::milliseconds input_move_time);
 
     // uci.cpp
