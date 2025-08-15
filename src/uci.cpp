@@ -109,7 +109,8 @@ void chess_t::uci() {
     board.load_fen(data::startpos_fen);
     while (true) {
         char input[64 * 1024];
-        gets_s(input);
+        fgets(input, sizeof(input) / sizeof(input[0]), stdin);
+        input[strcspn(input, "\n")] = '\0';
         
         log_uci("%s\n", input);
 
