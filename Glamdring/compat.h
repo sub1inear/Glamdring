@@ -95,7 +95,7 @@ Glamdring should use fancy magic bitboards on ARM instead of PEXT,
 but it is intended to run fastest on x64 only and so just emulates PEXT.
 */
 FORCEINLINE uint64_t pext(uint64_t x, uint64_t m) {
-#if  defined(_M_X64) || defined(__x86_64__)
+#if defined(_M_X64) || defined(__x86_64__)
     return _pext_u64(x, m);
 #else
     // adapted from Hacker's Delight 7-4
@@ -103,7 +103,7 @@ FORCEINLINE uint64_t pext(uint64_t x, uint64_t m) {
     uint64_t mk = ~m << 1; // count 0's to right
 
     for (uint64_t i = 0; i < 6; i++) {
-        uint64_t mp = mk ^ (mk << 1ull); // parallel prefix
+        uint64_t mp = mk ^ (mk << 1); // parallel prefix
         mp ^= mp << 2;
         mp ^= mp << 4;
         mp ^= mp << 8;
@@ -125,10 +125,10 @@ FORCEINLINE uint64_t pdep(uint64_t x, uint64_t m) {
     return _pdep_u64(x, m);
 #else
     // adapted from Hacker's Delight 7-5
-    uint64_t array[5];
+    uint64_t array[6];
     uint64_t m0 = m; // save original mask
     uint64_t mk = ~m << 1; // we will count 0's to right
-    for (uint64_t i = 0; i < 5; i++) {
+    for (uint64_t i = 0; i < 6; i++) {
         uint64_t mp = mk ^ (mk << 1); // parallel prefix
         mp ^= mp << 2;
         mp ^= mp << 4;
@@ -140,7 +140,7 @@ FORCEINLINE uint64_t pdep(uint64_t x, uint64_t m) {
         m = (m ^ mv) | (mv >> (1ull << i)); // compress m
         mk &= ~mp;
     }
-    for (uint64_t i = 4; i >= 0; i--) {
+    for (int64_t i = 5; i >= 0; i--) {
         uint64_t mv = array[i];
         uint64_t t = x << (1 << i);
         x = (x & ~mv) | (t & mv);

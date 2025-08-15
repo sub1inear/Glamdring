@@ -252,6 +252,10 @@ static void print_sliding_between_data(FILE *fout) {
 void chess_t::gen_precomp_data() {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     FILE *fout = fopen("data.cpp", "w");
+    if (fout == nullptr) {
+        printf("fopen() in gen_precomp_data() failed: %s", strerror(errno));
+        exit(1);
+    }
     fputs("#include \"data.h\"\n\n" 
           "namespace data {\n"
           "const pext_t bishop_pext[] = {\n",

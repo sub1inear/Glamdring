@@ -1,10 +1,9 @@
 #include "chess.h"
-#include "compat.h"
 #include "data.h"
 
-inline void chess_t::serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves) {
+void chess_t::serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves) {
     for ( ; moves_bitboard; moves_bitboard = intrin::blsr(moves_bitboard)) { // clear lowest bit
-        chess_t::square_t end_square = (chess_t::square_t)intrin::ctz(moves_bitboard); // count trailing zeros
+        square_t end_square = (square_t)intrin::ctz(moves_bitboard); // count trailing zeros
         uint64_t lsb = intrin::blsi(moves_bitboard); // isolate lowest bit
         move_t::move_flags_t flags = lsb & enemies ? move_t::CAPTURE : move_t::QUIET;
         moves.add({square, end_square, flags});
@@ -18,8 +17,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
 
     uint64_t single_move = (to_move == WHITE ? pawns >> 8 : pawns << 8) & ~blockers;
     for (uint64_t moves_bitboard = single_move & legal; moves_bitboard; moves_bitboard = intrin::blsr(moves_bitboard)) {
-        chess_t::square_t end_square = (chess_t::square_t)intrin::ctz(moves_bitboard);
-        chess_t::square_t start_square = end_square + (to_move == WHITE ? 8 : -8);
+        square_t end_square = (square_t)intrin::ctz(moves_bitboard);
+        square_t start_square = end_square + (to_move == WHITE ? 8 : -8);
         if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
@@ -36,8 +35,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     constexpr uint64_t double_move_rank = to_move == WHITE ? rank_4 : rank_5;
     uint64_t double_move = (to_move == WHITE ? single_move >> 8 : single_move << 8) & ~blockers & double_move_rank & legal;
     for ( ; double_move; double_move = intrin::blsr(double_move)) {
-        chess_t::square_t end_square = (chess_t::square_t)intrin::ctz(double_move);
-        chess_t::square_t start_square = end_square + (to_move == WHITE ? 16 : -16);
+        square_t end_square = (square_t)intrin::ctz(double_move);
+        square_t start_square = end_square + (to_move == WHITE ? 16 : -16);
         if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
@@ -48,8 +47,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
 
     uint64_t capture_left_move = (to_move == WHITE ? (pawns & ~file_a) >> 9 : (pawns & ~file_h) << 9);
     for (uint64_t moves_bitboard = capture_left_move & enemies & legal; moves_bitboard; moves_bitboard = intrin::blsr(moves_bitboard)) {
-        chess_t::square_t end_square = (chess_t::square_t)intrin::ctz(moves_bitboard);
-        chess_t::square_t start_square = end_square + (to_move == WHITE ? 9 : -9);
+        square_t end_square = (square_t)intrin::ctz(moves_bitboard);
+        square_t start_square = end_square + (to_move == WHITE ? 9 : -9);
         if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
@@ -63,8 +62,8 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
     }
     uint64_t capture_right_move = (to_move == WHITE ? (pawns & ~file_h) >> 7 : (pawns & ~file_a) << 7);
     for (uint64_t moves_bitboard = capture_right_move & enemies & legal; moves_bitboard; moves_bitboard = intrin::blsr(moves_bitboard)) {
-        chess_t::square_t end_square = (chess_t::square_t)intrin::ctz(moves_bitboard);
-        chess_t::square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
+        square_t end_square = (square_t)intrin::ctz(moves_bitboard);
+        square_t start_square = end_square + (to_move == WHITE ? 7 : -7);
         if (1ull << end_square & ~pin_lines[start_square]) {
             continue;    
         }
@@ -76,7 +75,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
             moves.add({start_square, end_square, move_t::CAPTURE});
         }
     }
-    chess_t::square_t en_passant = board.game_state_stack.last()->en_passant;
+    square_t en_passant = board.game_state_stack.last()->en_passant;
     if (en_passant != null_square) {
         // check if en passant is pinned
         uint64_t en_passant_bitboard = 1ull << en_passant;
@@ -88,7 +87,7 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
         uint64_t pinner = rook_queen & en_passant_start_rank;
 
         if (pinner) {
-            chess_t::square_t pinner_square = (chess_t::square_t)intrin::ctz(pinner);
+            square_t pinner_square = (square_t)intrin::ctz(pinner);
             blockers &= ~capture_bitboard;
             blockers &= ~(board.bitboards[to_move][PAWN] & en_passant_start_rank & gen_rook_moves(pinner_square, blockers, 0ull));
             
@@ -103,13 +102,13 @@ void chess_t::gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies,
         legal |= to_move == WHITE ? (legal & capture_bitboard) >> 8 : (legal & capture_bitboard) << 8;
 
         if (capture_left_move & en_passant_bitboard & legal) {
-            chess_t::square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
+            square_t start_square = to_move == WHITE ? en_passant + 9 : en_passant - 9;
             if (en_passant_bitboard & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
             }
         }
         if (capture_right_move & en_passant_bitboard & legal) {
-            chess_t::square_t start_square = to_move == WHITE ? en_passant + 7 : en_passant - 7;
+            square_t start_square = to_move == WHITE ? en_passant + 7 : en_passant - 7;
             if (en_passant_bitboard & pin_lines[start_square]) {
                 moves.add({start_square, en_passant, move_t::EN_PASSANT_CAPTURE});
             }
@@ -181,7 +180,7 @@ uint64_t chess_t::gen_allies() {
     return board.bitboards[to_move][PAWN] | board.bitboards[to_move][KNIGHT] | board.bitboards[to_move][BISHOP] | board.bitboards[to_move][ROOK] | board.bitboards[to_move][QUEEN] | board.bitboards[to_move][KING];
 }
 
-uint64_t chess_t::gen_sliding_between(chess_t::square_t start_square, chess_t::square_t end_square) {
+uint64_t chess_t::gen_sliding_between(square_t start_square, square_t end_square) {
     return data::sliding_between_data[start_square][end_square];
 }
 
@@ -212,47 +211,47 @@ uint64_t chess_t::gen_king_danger_squares(uint64_t blockers) {
     blockers &= ~board.bitboards[to_move][KING];
     // assumes one king
     {
-        chess_t::square_t king_square = (chess_t::square_t)intrin::ctz(board.bitboards[other_to_move][KING]);
+        square_t king_square = (square_t)intrin::ctz(board.bitboards[other_to_move][KING]);
         danger |= gen_king_moves(king_square, 0ull);
     }
     for (uint64_t pawns = board.bitboards[other_to_move][PAWN]; pawns; pawns = intrin::blsr(pawns)) {
-        chess_t::square_t pawn_square = (chess_t::square_t)intrin::ctz(pawns);
+        square_t pawn_square = (square_t)intrin::ctz(pawns);
         danger |= gen_pawn_attacks(other_to_move, pawn_square);
     }
     for (uint64_t knights = board.bitboards[other_to_move][KNIGHT]; knights; knights = intrin::blsr(knights)) {
-        chess_t::square_t knight_square = (chess_t::square_t)intrin::ctz(knights);
+        square_t knight_square = (square_t)intrin::ctz(knights);
         danger |= gen_knight_moves(knight_square, 0ull);
     }
     for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = intrin::blsr(bishops)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)intrin::ctz(bishops);
+        square_t bishop_square = (square_t)intrin::ctz(bishops);
         danger |= gen_bishop_moves(bishop_square, blockers, 0ull);
     }
     for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = intrin::blsr(rooks)) {
-        chess_t::square_t rook_square = (chess_t::square_t)intrin::ctz(rooks);
+        square_t rook_square = (square_t)intrin::ctz(rooks);
         danger |= gen_rook_moves(rook_square, blockers, 0ull);
     }
     for (uint64_t queens = board.bitboards[other_to_move][QUEEN]; queens; queens = intrin::blsr(queens)) {
-        chess_t::square_t queen_square = (chess_t::square_t)intrin::ctz(queens);
+        square_t queen_square = (square_t)intrin::ctz(queens);
         danger |= gen_queen_moves(queen_square, blockers, 0ull);
     }
     return danger;
 }
 
-uint64_t chess_t::gen_pinning_danger(chess_t::square_t square) {
+uint64_t chess_t::gen_pinning_danger(square_t square) {
     color_t to_move = board.game_state_stack.last()->to_move;
     color_t other_to_move = (color_t)!to_move;
 
     uint64_t pinning_danger = 0ull;
     for (uint64_t bishops = board.bitboards[other_to_move][BISHOP]; bishops; bishops = intrin::blsr(bishops)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)intrin::ctz(bishops);
+        square_t bishop_square = (square_t)intrin::ctz(bishops);
         pinning_danger |= gen_sliding_between(bishop_square, square);
     }
     for (uint64_t rooks = board.bitboards[other_to_move][ROOK]; rooks; rooks = intrin::blsr(rooks)) {
-        chess_t::square_t rook_square = (chess_t::square_t)intrin::ctz(rooks);
+        square_t rook_square = (square_t)intrin::ctz(rooks);
         pinning_danger |= gen_sliding_between(rook_square, square);
     }
     for (uint64_t queens = board.bitboards[other_to_move][QUEEN]; queens; queens = intrin::blsr(queens)) {
-        chess_t::square_t queen_square = (chess_t::square_t)intrin::ctz(queens);
+        square_t queen_square = (square_t)intrin::ctz(queens);
         pinning_danger |= gen_sliding_between(queen_square, square);
     }
     return pinning_danger;
@@ -278,7 +277,7 @@ void chess_t::gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t alli
     uint64_t bishop_queen_attackers = bishop_moves_from_square & bishop_queen;
 
     for ( ; bishop_queen_attackers; bishop_queen_attackers = intrin::blsr(bishop_queen_attackers)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)intrin::ctz(bishop_queen_attackers);
+        square_t bishop_square = (square_t)intrin::ctz(bishop_queen_attackers);
         uint64_t bishop_queen_attacker = intrin::blsi(bishop_queen_attackers);
 
         uint64_t pin = gen_bishop_moves(bishop_square, unpinned_blockers, 0ull) & bishop_moves_from_square;
@@ -286,7 +285,7 @@ void chess_t::gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t alli
 
         uint64_t pinned = pin & pinned_allies;
         if (intrin::popcnt(pinned) == 1) { // count 1's in mask
-            chess_t::square_t pinned_square = (chess_t::square_t)intrin::ctz(pinned);
+            square_t pinned_square = (square_t)intrin::ctz(pinned);
             pin_lines[pinned_square] = pin;
         }
     }
@@ -295,7 +294,7 @@ void chess_t::gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t alli
     uint64_t rook_queen_attackers = rook_moves_from_square & rook_queen;
     
     for ( ; rook_queen_attackers; rook_queen_attackers = intrin::blsr(rook_queen_attackers)) {
-        chess_t::square_t rook_square = (chess_t::square_t)intrin::ctz(rook_queen_attackers);
+        square_t rook_square = (square_t)intrin::ctz(rook_queen_attackers);
         uint64_t rook_queen_attacker = intrin::blsi(rook_queen_attackers);
 
         uint64_t pin = gen_rook_moves(rook_square, unpinned_blockers, 0ull) & rook_moves_from_square;
@@ -303,7 +302,7 @@ void chess_t::gen_pins(uint64_t (&pin_lines)[64], square_t square, uint64_t alli
 
         uint64_t pinned = pin & pinned_allies;
         if (intrin::popcnt(pinned) == 1) {
-            chess_t::square_t pinned_square = (chess_t::square_t)intrin::ctz(pinned);
+            square_t pinned_square = (square_t)intrin::ctz(pinned);
             // if queen, pin_lines is already set so | is necessary
             if (pin_lines[pinned_square] == 0xffffffffffffffffull) {
                 pin_lines[pinned_square] = pin;
@@ -323,7 +322,7 @@ chess_t::move_array_t chess_t::gen_moves() {
     uint64_t allies = gen_allies();
     uint64_t enemies = blockers & ~allies;
 
-    chess_t::square_t king_square = (chess_t::square_t)intrin::ctz(board.bitboards[to_move][KING]);
+    square_t king_square = (square_t)intrin::ctz(board.bitboards[to_move][KING]);
 
     uint64_t checkers = gen_attackers(king_square, blockers);
     uint32_t num_checkers = (uint32_t)intrin::popcnt(checkers);
@@ -350,7 +349,7 @@ chess_t::move_array_t chess_t::gen_moves() {
     if (num_checkers == 1) {
         legal = checkers;
         // inspired by https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
-        chess_t::square_t checking_square = (chess_t::square_t)intrin::ctz(checkers);
+        square_t checking_square = (square_t)intrin::ctz(checkers);
         switch (board.get_piece(checking_square).piece) {
         case BISHOP:
         case ROOK:
@@ -371,22 +370,22 @@ chess_t::move_array_t chess_t::gen_moves() {
         gen_pawn_moves<BLACK>(board.bitboards[to_move][PAWN], blockers, allies, enemies, legal, pin_lines, moves);    
     }
     for (uint64_t knights = board.bitboards[to_move][KNIGHT]; knights; knights = intrin::blsr(knights)) {
-        chess_t::square_t knight_square = (chess_t::square_t)intrin::ctz(knights);
+        square_t knight_square = (square_t)intrin::ctz(knights);
         uint64_t moves_bitboard = gen_knight_moves(knight_square, allies) & legal & pin_lines[knight_square];
         serialize_bitboard(knight_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t bishops = board.bitboards[to_move][BISHOP]; bishops; bishops = intrin::blsr(bishops)) {
-        chess_t::square_t bishop_square = (chess_t::square_t)intrin::ctz(bishops);
+        square_t bishop_square = (square_t)intrin::ctz(bishops);
         uint64_t moves_bitboard = gen_bishop_moves(bishop_square, blockers, allies) & legal & pin_lines[bishop_square];
         serialize_bitboard(bishop_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t rooks = board.bitboards[to_move][ROOK]; rooks; rooks = intrin::blsr(rooks)) {
-        chess_t::square_t rook_square = (chess_t::square_t)intrin::ctz(rooks);
+        square_t rook_square = (square_t)intrin::ctz(rooks);
         uint64_t moves_bitboard = gen_rook_moves(rook_square, blockers, allies) & legal & pin_lines[rook_square];
         serialize_bitboard(rook_square, moves_bitboard, enemies, moves);
     }
     for (uint64_t queens = board.bitboards[to_move][QUEEN]; queens; queens = intrin::blsr(queens)) {
-        chess_t::square_t queen_square = (chess_t::square_t)intrin::ctz(queens);
+        square_t queen_square = (square_t)intrin::ctz(queens);
         uint64_t moves_bitboard = gen_queen_moves(queen_square, blockers, allies) & legal & pin_lines[queen_square];
         serialize_bitboard(queen_square, moves_bitboard, enemies, moves);
     }

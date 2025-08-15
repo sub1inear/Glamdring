@@ -204,7 +204,7 @@ public:
         move_t(board_t &board, const char *str);
         move_t(board_t &board, uint16_t polyglot_move);
 
-        void compute_flags(board_t &board, move_flags_t promotion, const chess_t::square_t (&king_castling_end_squares)[][2]);
+        void compute_flags(board_t &board, move_flags_t promotion, const square_t (&king_castling_end_squares)[][2]);
 
         bool is_capture() {
             return flags & CAPTURE;
@@ -295,7 +295,7 @@ public:
 
     // movegen.cpp
     static void serialize_bitboard(square_t square, uint64_t moves_bitboard, uint64_t enemies, move_array_t &moves);
-    template <color_t to_move>
+    template <chess_t::color_t to_move>
     void gen_pawn_moves(uint64_t pawns, uint64_t blockers, uint64_t allies, uint64_t enemies, uint64_t legal, uint64_t (&pin_lines)[64], move_array_t &moves);
     uint64_t gen_pawn_attacks(color_t to_move, square_t square);
     uint64_t gen_knight_moves(square_t square, uint64_t allies);
