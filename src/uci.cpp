@@ -106,11 +106,6 @@ int32_t chess_t::search_uci(std::chrono::milliseconds time, bool infinite, uint3
 }
 
 void chess_t::uci() {
-    if (!opening_book.set_book("../../OpeningBooks/Titans.bin")) {
-        print_uci("info string set_opening_book() failed: %s\n", strerror(errno));
-        return;
-    }
-
     board.load_fen(data::startpos_fen);
     while (true) {
         char input[64 * 1024];
