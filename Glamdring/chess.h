@@ -356,7 +356,7 @@ public:
 
     go_options_t parse_go_command();
     void parse_position_command();
-    int32_t search_uci(std::chrono::milliseconds time, bool infinite, uint32_t max_depth, uint64_t max_nodes, FILE *log);
+    int32_t search_uci(std::chrono::milliseconds time, bool infinite, uint32_t max_depth, uint64_t max_nodes);
     void uci();
 
     // precomp.cpp
