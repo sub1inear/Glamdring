@@ -108,6 +108,10 @@ int32_t chess_t::search(uint32_t max_depth, uint64_t max_nodes, bool use_opening
     nodes = 0;
     if (use_opening_book && board.game_state_stack.size < 10) {
         if (opening_book.lookup(board, best_move)) {
+            print_uci("info depth 0 nodes 0 score cp 0 time 0 nps 0 multipv 1 pv ");
+            best_move.print();
+            best_move.print(log);
+            print_uci("\n");
             stop_search();
             return 0;
         }
@@ -116,11 +120,20 @@ int32_t chess_t::search(uint32_t max_depth, uint64_t max_nodes, bool use_opening
     int32_t eval;
     for (uint32_t depth = 1; depth < max_depth; depth++) {
         move_t old_best_move = best_move;
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         eval = negamax(depth, max_nodes);
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         if (!searching || nodes >= max_nodes) {
             best_move = old_best_move;
             break;
         }
+        std::chrono::duration<float> time = end - start;
+
+        print_uci("info depth %u nodes %llu score cp %d time %lli nps %llu multipv 1 pv ",
+                   depth, nodes, eval, std::chrono::duration_cast<std::chrono::milliseconds>(time).count(), (uint64_t)(nodes / time.count()));
+        best_move.print();
+        best_move.print(log);
+        print_uci("\n");
     }
     stop_search();
     return eval;
