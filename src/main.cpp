@@ -6,7 +6,8 @@ int main(int argc, char **argv) {
 
     bool result = chess.opening_book.set_book("../data/Titans.bin");
     if (!result) {
-        chess.print_uci("fopen() in opening_book_t::set_book() failed: %s", strerror(errno));
+        chess.print_uci("fopen() in opening_book_t::set_book() failed: %s\n", strerror(errno));
+        return 1;
     }
 
     chess.uci();
