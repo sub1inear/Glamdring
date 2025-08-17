@@ -330,6 +330,7 @@ public:
     // draw.cpp
     bool is_repetition();
     bool is_insufficient_material();
+    bool is_fifty_move_rule();
 
     // search.cpp
     move_t best_move;

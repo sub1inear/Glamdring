@@ -62,3 +62,7 @@ bool chess_t::is_insufficient_material() {
 
     return false;
 }
+
+bool chess_t::is_fifty_move_rule() {
+    return board.game_state_stack.last()->half_move_clock >= 100;
+}
