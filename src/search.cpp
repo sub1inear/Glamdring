@@ -46,8 +46,10 @@ int32_t chess_t::negamax(uint32_t depth, uint64_t max_nodes, bool root, int32_t 
     move_array_t moves = gen_moves();
 
     if (moves.size == 0) {
-        // TODO: return 0 if not in check
-        return eval_min;
+        if (gen_attackers(intrin::ctz(board.bitboards[to_move][KING]), gen_blockers()) {
+            return eval_min;
+        }
+        return 0;
     }
 
     if (is_repetition() || is_insufficient_material() || is_fifty_move_rule()) {
