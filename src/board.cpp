@@ -197,7 +197,14 @@ void chess_t::board_t::make_move(move_t move) {
     new_game_state->zobrist_key = old_game_state->zobrist_key;
 
     // reset half move clock on captures and pawn moves, increase otherwise
-    new_game_state->half_move_clock = move.is_capture() || start_piece.piece == PAWN ? 0 : old_game_state->half_move_clock + 1;
+    if (move.is_capture() || start_piece.piece == PAWN) {
+        // set last_irrev_ply counter to speed up repetition detection
+        // reset last bit to ensure move is for white for fast set to side to move
+        last_irrev_ply = game_state_stack.size - 1 & ~1u;
+        new_game_state->half_move_clock = 0;
+    } else {
+        new_game_state->half_move_clock = old_game_state->half_move_clock + 1;  
+    }
 
     new_game_state->full_moves = old_game_state->to_move == WHITE ? old_game_state->full_moves : old_game_state->full_moves + 1;
 
@@ -218,7 +225,10 @@ void chess_t::board_t::make_move(move_t move) {
 
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
     
-    if (move.is_castling()) {        
+    if (move.is_castling()) {
+        // set last_irrev_ply counter to speed up repetition detection
+        // reset last bit to ensure move is for white for fast set to side to move
+        last_irrev_ply = game_state_stack.size - 1 & ~1u;
         castling_side_t side = move.get_castling();
         
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];

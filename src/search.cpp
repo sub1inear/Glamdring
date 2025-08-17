@@ -43,13 +43,20 @@ int32_t chess_t::negamax(uint32_t depth, uint64_t max_nodes, bool root, int32_t 
     }
 
     // TODO: search transposition table entry first without involving move ordering
-
     move_array_t moves = gen_moves();
-    
+
+    if (is_repetition()) {
+        return 0;
+    }
+
+    // TODO: check insufficient material
+    // TODO: check fifty-move rule
+
     if (moves.size == 0) {
-        // TODO: add draw detection
+        // TODO: return 0 if not in check
         return eval_min;
     }
+
     if (depth == 0) {
         return eval();
     }

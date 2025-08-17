@@ -145,6 +145,8 @@ public:
         };
         array_t<game_state_t, max_ply> game_state_stack;
 
+        uint32_t last_irrev_ply;
+
         board_t() {}
         piece_color_t get_piece(square_t square) {
             return board[square];
@@ -158,6 +160,7 @@ public:
         void print(FILE *out = stdout);
         void clear();
         void load_fen(const char *fen);
+
         void make_move(move_t move);
         void undo_move(move_t move);
     };
@@ -253,7 +256,7 @@ public:
         };
         transposition_entry_t *table;
         static constexpr uint64_t size = 512 * 1024 * 1024; // must be power of two to turn key % size into key & (size - 1)
-        static constexpr uint64_t entries = size / sizeof(transposition_entry_t);
+        static constexpr uint64_t entries = size / sizeof(*table);
         transposition_table_t() {
             table = new transposition_entry_t[entries] {};
         }
@@ -323,6 +326,9 @@ public:
     template <color_t color>
     int32_t count_material();
     int32_t eval();
+
+    // draw.cpp
+    bool is_repetition();
 
     // search.cpp
     move_t best_move;
