@@ -20,3 +20,45 @@ bool chess_t::is_repetition() {
     }
     return false;
 }
+
+bool chess_t::is_insufficient_material() {
+    uint64_t white_bishop = board.bitboards[WHITE][BISHOP];
+    uint64_t black_bishop = board.bitboards[BLACK][BISHOP];
+
+    uint64_t white_minor = board.bitboards[WHITE][KNIGHT] | white_bishop;
+    uint64_t black_minor = board.bitboards[BLACK][KNIGHT] | black_bishop;
+
+    uint64_t white = board.bitboards[WHITE][PAWN] | white_minor | board.bitboards[WHITE][ROOK] | board.bitboards[WHITE][QUEEN] | board.bitboards[WHITE][KING];
+    uint64_t black = board.bitboards[BLACK][PAWN] | black_minor | board.bitboards[BLACK][ROOK] | board.bitboards[BLACK][QUEEN] | board.bitboards[BLACK][KING];
+
+    // K vs K (assumes kings are on board)
+    if (intrin::popcnt(white | black) == 2) {
+        return true;
+    }
+
+    // K vs K(N or B)
+    if (intrin::popcnt(black) == 1 &&
+        intrin::popcnt(white) == 2 &&
+        intrin::popcnt(white_minor) == 1) {
+        return true;
+    }
+
+
+    if (intrin::popcnt(white) == 1 &&
+        intrin::popcnt(black) == 2 &&
+        intrin::popcnt(black_minor) == 1) {
+        return true;
+    }
+
+    // KB vs KB (B on same color)
+    // relies on short-circuiting as ctz with 0 is undefined in some implementations
+    if (intrin::popcnt(white) == 2 &&
+        intrin::popcnt(black) == 2 &&
+        intrin::popcnt(white_bishop) == 1 &&
+        intrin::popcnt(black_bishop) == 1 &&
+        intrin::ctz(white_bishop) % 2 == intrin::ctz(black_bishop) % 2) {
+        return true;
+    }
+
+    return false;
+}

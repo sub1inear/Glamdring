@@ -45,11 +45,10 @@ int32_t chess_t::negamax(uint32_t depth, uint64_t max_nodes, bool root, int32_t 
     // TODO: search transposition table entry first without involving move ordering
     move_array_t moves = gen_moves();
 
-    if (is_repetition()) {
+    if (is_repetition() || is_insufficient_material()) {
         return 0;
     }
 
-    // TODO: check insufficient material
     // TODO: check fifty-move rule
 
     if (moves.size == 0) {
