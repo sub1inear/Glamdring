@@ -20,7 +20,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 )
 # enable AVX-512
 if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /arch:AVX512)
+    target_compile_options(${PROJECT_NAME} PRIVATE /arch:AVX512 /Ox)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME} PRIVATE -mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi -mbmi2)
+    target_compile_options(${PROJECT_NAME} PRIVATE -mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi -mbmi2 -O3)
 endif()
