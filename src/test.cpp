@@ -2,11 +2,12 @@
 #include "data.h"
 
 uint64_t chess_t::perft(uint32_t depth, bool root) {
+    if (depth == 0) {
+        return 1;
+    }
     uint64_t num_moves = 0;
     move_array_t moves = gen_moves();
-    if (depth == 1) {
-        return moves.size;
-    }
+    
     for (move_t &move : moves) {
         board.make_move(move);
         uint64_t new_moves = perft(depth - 1, false);

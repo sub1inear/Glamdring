@@ -143,6 +143,19 @@ void chess_t::uci() {
 
                     std::thread search_thread { &chess_t::search_uci, this, move_time, go_options.infinite, go_options.max_depth, go_options.max_nodes };
                     search_thread.detach();
+                } else if (!strcmp(command, "perft")) {
+                    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+                    uint64_t perft_result = perft(atoi(strtok(nullptr, " ")));
+                    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                    std::chrono::duration<float> time = end - start;
+                    print_uci("\n"
+                              "Nodes: %llu\n"
+                              "Time: %lli ms\n"
+                              "NPS: %llu\n",
+                              perft_result,
+                              std::chrono::duration_cast<std::chrono::milliseconds>(time).count(),
+                              (uint64_t)(perft_result / time.count())
+                    );
                 } else if (!strcmp(command, "position")) {
                     parse_position_command();
                 } else if (!strcmp(command, "d")) {
