@@ -11,7 +11,5 @@ int main(int argc, char **argv) {
     }
 
     chess.uci();*/
-
-    chess.test_transposition_table();
     chess.test_draw();
 }

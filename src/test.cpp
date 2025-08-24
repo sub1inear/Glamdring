@@ -131,6 +131,11 @@ void chess_t::test_draw() {
         failures += assertf(is_repetition(), repetition_pos.repetition, "%d Repetition", i);
     }
 
+    for (data::insufficient_material_test_t insufficient_material_pos : data::insufficient_material_test_data) {
+        board.load_fen(insufficient_material_pos.fen);
+        failures += assertf(is_insufficient_material(), insufficient_material_pos.insufficient_material, insufficient_material_pos.fen);
+    } 
+
     if (failures) {
         printf("\x1b[31m"
                "%d tests failed."

@@ -38,6 +38,10 @@ struct repetition_test_t {
     chess_t::move_t moves[14];
     bool repetition;
 };
+struct insufficient_material_test_t {
+    const char *fen;
+    bool insufficient_material;
+};
 extern const char startpos_fen[];
 extern const uint64_t king_castling_clear[][2];
 extern const uint64_t king_castling_safe[][2];
@@ -54,4 +58,5 @@ extern const uint8_t mvv_lva[][6];
 extern const zobrist_data_t zobrist_random_data;
 extern const zobrist_test_t zobrist_test_data[9];
 extern const repetition_test_t repetition_test_data[5];
+extern const insufficient_material_test_t insufficient_material_test_data[10];
 }

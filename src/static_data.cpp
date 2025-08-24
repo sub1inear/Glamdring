@@ -765,4 +765,56 @@ const repetition_test_t repetition_test_data[] = {
         true,
     },
 };
+const insufficient_material_test_t insufficient_material_test_data[] = {
+    {
+        // K vs K
+        "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
+        true,
+    },
+    {
+        // K vs KB
+        "4k3/8/8/8/8/8/2b5/4K3 w - - 0 1",
+        true,
+    },
+    {
+        // K vs KN
+        "4k3/8/8/8/8/8/2n5/4K3 w - - 0 1",
+        true,
+    },
+    {
+        // KB vs KB (B on same color)
+        "2b1k3/8/8/8/8/8/8/2B1K3 w - - 0 1",
+        true,
+    },
+    {
+        // KNN vs K
+        "4k3/8/8/8/8/8/8/1NN1K3 w - - 0 1",
+        false,
+    },
+    {
+        // KBN vs K
+        "4k3/8/8/8/8/8/8/2B1KN2 w - - 0 1",
+        false,
+    },
+    {
+        // KR vs K
+        "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
+        false,
+    },
+    {
+        // KP vs K
+        "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",
+        false,
+    },
+    {
+        // KB vs K
+        "4k3/8/8/8/8/8/8/2B1KB2 w - - 0 1",
+        false,
+    },
+    {
+        // KQ vs K
+        "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",
+        false,
+    },
+};
 }
