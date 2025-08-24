@@ -68,13 +68,12 @@ void chess_t::test_movegen() {
 
 template <typename T>
 static bool assertf(T expected, T result, const char *fmt, ...) {
-    if (memcmp(&expected, &result, sizeof(expected))) {
+    if (expected != result) {
         va_list ap;
         va_start(ap, fmt);
         fputs("\x1b[31m" "'", stdout);
         vprintf(fmt, ap);
         puts("' test failed." "\x1b[0m\n");
-                
         va_end(ap);
         return true;
     }
@@ -94,7 +93,7 @@ void chess_t::test_transposition_table() {
     transposition_table_t::transposition_data_t result = transposition_table.lookup(key).data;
     failures += assertf(expected_result, result, "Store");
 
-    for (data::zobrist_test_t zobrist_pos : data::zobrist_test_data ) {
+    for (data::zobrist_test_t zobrist_pos : data::zobrist_test_data) {
         board.load_fen(zobrist_pos.fen);
         failures += assertf(board.get_polyglot_key(), zobrist_pos.zobrist_key, zobrist_pos.fen);
         
@@ -105,6 +104,32 @@ void chess_t::test_transposition_table() {
         failures += assertf(board.get_polyglot_key(), zobrist_pos.zobrist_key, "%s Moves", zobrist_pos.fen);
     }
 
+
+    if (failures) {
+        printf("\x1b[31m"
+               "%d tests failed."
+               "\x1b[0m\n",
+                failures
+        );
+    } else {
+        puts("\x1b[32m"
+              "All tests succeeded!"
+              "\x1b[0m" // puts appends newline
+        );
+    }
+}
+
+void chess_t::test_draw() {
+    uint32_t failures = 0;
+
+    for (uint32_t i = 0; i < sizeof(data::repetition_test_data) / sizeof(data::repetition_test_data[0]); i++) {
+        data::repetition_test_t repetition_pos = data::repetition_test_data[i];
+        board.load_fen(repetition_pos.fen);
+        for (uint8_t j = 0; j < repetition_pos.moves_size; j++) {
+            board.make_move(repetition_pos.moves[j]);
+        }
+        failures += assertf(is_repetition(), repetition_pos.repetition, "%d Repetition", i);
+    }
 
     if (failures) {
         printf("\x1b[31m"

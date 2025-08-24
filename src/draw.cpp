@@ -31,12 +31,15 @@ bool chess_t::is_insufficient_material() {
     uint64_t white = board.bitboards[WHITE][PAWN] | white_minor | board.bitboards[WHITE][ROOK] | board.bitboards[WHITE][QUEEN] | board.bitboards[WHITE][KING];
     uint64_t black = board.bitboards[BLACK][PAWN] | black_minor | board.bitboards[BLACK][ROOK] | board.bitboards[BLACK][QUEEN] | board.bitboards[BLACK][KING];
 
+    // TODO: optimize with early exit path?
+
     // K vs K (assumes kings are on board)
     if (intrin::popcnt(white | black) == 2) {
         return true;
     }
 
     // K vs K(N or B)
+    // TODO: cache intrin::popcnt results
     if (intrin::popcnt(black) == 1 &&
         intrin::popcnt(white) == 2 &&
         intrin::popcnt(white_minor) == 1) {
@@ -51,7 +54,7 @@ bool chess_t::is_insufficient_material() {
     }
 
     // KB vs KB (B on same color)
-    // relies on short-circuiting as ctz with 0 is undefined in some implementations
+    // relies on short-circuiting as intrin::ctz with 0 is undefined in some implementations
     if (intrin::popcnt(white) == 2 &&
         intrin::popcnt(black) == 2 &&
         intrin::popcnt(white_bishop) == 1 &&

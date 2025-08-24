@@ -32,6 +32,12 @@ struct zobrist_test_t {
     chess_t::move_t moves[7];
     uint64_t zobrist_key;
 };
+struct repetition_test_t {
+    const char *fen;
+    uint8_t moves_size;
+    chess_t::move_t moves[14];
+    bool repetition;
+};
 extern const char startpos_fen[];
 extern const uint64_t king_castling_clear[][2];
 extern const uint64_t king_castling_safe[][2];
@@ -47,4 +53,5 @@ extern const int16_t piece_square_values[][64];
 extern const uint8_t mvv_lva[][6];
 extern const zobrist_data_t zobrist_random_data;
 extern const zobrist_test_t zobrist_test_data[9];
+extern const repetition_test_t repetition_test_data[5];
 }

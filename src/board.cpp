@@ -30,7 +30,7 @@ uint64_t chess_t::board_t::get_polyglot_key() {
 
     uint64_t zobrist_key = game_state_stack.last()->zobrist_key;
 
-    if (game_state_stack.last()->en_passant != null_square) {  
+    if (game_state_stack.last()->en_passant != null_square) {
         color_t to_move = game_state_stack.last()->to_move;
 
         square_t offset = game_state_stack.last()->to_move == WHITE ? 8 : -8;
@@ -76,7 +76,7 @@ void chess_t::board_t::print(FILE *out) {
             }
         }
     }
-    
+
     if (!game_state->castling_rights[WHITE][KINGSIDE] && !game_state->castling_rights[WHITE][QUEENSIDE] &&
         !game_state->castling_rights[BLACK][KINGSIDE] && !game_state->castling_rights[BLACK][QUEENSIDE]) {
         fputs("None", out);
@@ -107,6 +107,7 @@ void chess_t::board_t::clear() {
     memset(bitboards, 0, sizeof(bitboards));
     memset(game_state_stack.data, 0, sizeof(game_state_stack.data));
     game_state_stack.size = 1;
+    last_irrev_ply = 0;
 }
 
 void chess_t::board_t::load_fen(const char *fen) {
@@ -168,7 +169,10 @@ void chess_t::board_t::load_fen(const char *fen) {
 
 void chess_t::board_t::make_move(move_t move) {
     game_state_t *old_game_state = game_state_stack.last();
-    
+    // TODO: check if size is greater than max_ply
+    game_state_t *new_game_state = game_state_stack.next();
+    new_game_state->zobrist_key = old_game_state->zobrist_key;
+
     piece_color_t start_piece = get_piece(move.from);
     piece_color_t new_piece = start_piece;
     piece_color_t captured_piece = get_piece(move.to);
@@ -188,13 +192,8 @@ void chess_t::board_t::make_move(move_t move) {
     } else if (move.is_capture()) {
         clear_piece_bitboard(move.to, captured_piece);
     }
-    
-    clear_piece(move.from, start_piece);
-    
-    // TODO: check if size is greater than max_ply
-    game_state_t *new_game_state = game_state_stack.next();
 
-    new_game_state->zobrist_key = old_game_state->zobrist_key;
+    clear_piece(move.from, start_piece);
 
     // reset half move clock on captures and pawn moves, increase otherwise
     if (move.is_capture() || start_piece.piece == PAWN) {
@@ -203,7 +202,7 @@ void chess_t::board_t::make_move(move_t move) {
         last_irrev_ply = game_state_stack.size - 1 & ~1u;
         new_game_state->half_move_clock = 0;
     } else {
-        new_game_state->half_move_clock = old_game_state->half_move_clock + 1;  
+        new_game_state->half_move_clock = old_game_state->half_move_clock + 1;
     }
 
     new_game_state->full_moves = old_game_state->to_move == WHITE ? old_game_state->full_moves : old_game_state->full_moves + 1;
@@ -224,18 +223,18 @@ void chess_t::board_t::make_move(move_t move) {
     new_game_state->captured_piece = captured_piece;
 
     memcpy(new_game_state->castling_rights, old_game_state->castling_rights, sizeof(new_game_state->castling_rights));
-    
+
     if (move.is_castling()) {
         // set last_irrev_ply counter to speed up repetition detection
         // reset last bit to ensure move is for white for fast set to side to move
         last_irrev_ply = game_state_stack.size - 1 & ~1u;
         castling_side_t side = move.get_castling();
-        
+
         square_t rook_start_square = data::rook_castling_start_squares[old_game_state->to_move][side];
         square_t rook_end_square = data::rook_castling_end_squares[old_game_state->to_move][side];
 
         piece_color_t rook = get_piece(rook_start_square);
-        
+
         clear_piece(rook_start_square, rook);
         set_piece(rook_end_square, rook);
     }
@@ -268,7 +267,7 @@ void chess_t::board_t::make_move(move_t move) {
             if (new_game_state->castling_rights[new_game_state->to_move][KINGSIDE]) {
                 new_game_state->zobrist_key ^= data::zobrist_random_data.castling[old_game_state->to_move][KINGSIDE];
             }
-            new_game_state->castling_rights[new_game_state->to_move][KINGSIDE] = false;    
+            new_game_state->castling_rights[new_game_state->to_move][KINGSIDE] = false;
         } else if (move.to == data::rook_castling_start_squares[new_game_state->to_move][QUEENSIDE]) {
             if (new_game_state->castling_rights[new_game_state->to_move][QUEENSIDE]) {
                 new_game_state->zobrist_key ^= data::zobrist_random_data.castling[old_game_state->to_move][QUEENSIDE];
@@ -293,7 +292,7 @@ void chess_t::board_t::undo_move(move_t move) {
 
     if (move.is_capture()) {
         if (move.flags == move_t::EN_PASSANT_CAPTURE) {
-            clear_piece(move.to, start_piece); 
+            clear_piece(move.to, start_piece);
             set_piece(new_game_state->to_move == WHITE ? move.to + 8 : move.to - 8, old_game_state->captured_piece);
         } else {
             clear_piece_bitboard(move.to, start_piece);
@@ -305,10 +304,10 @@ void chess_t::board_t::undo_move(move_t move) {
 
     if (move.is_castling()) {
         castling_side_t side = move.get_castling();
-        
+
         square_t rook_start_square = data::rook_castling_start_squares[new_game_state->to_move][side];
         square_t rook_end_square = data::rook_castling_end_squares[new_game_state->to_move][side];
-    
+
         piece_color_t rook = get_piece(rook_end_square);
 
         clear_piece(rook_end_square, rook);

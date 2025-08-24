@@ -242,6 +242,10 @@ public:
             uint8_t move_idx;
             uint8_t depth;
             tranposition_type_t type;
+            friend bool operator ==(const transposition_data_t &a, const transposition_data_t &b) {
+                return a.eval == b.eval && a.move_idx == b.move_idx &&
+                       a.depth == b.depth && a.type == b.type;
+            }
             operator uint64_t() {
                 uint64_t result;
                 static_assert(sizeof(transposition_data_t) == sizeof(result),
@@ -374,5 +378,6 @@ public:
     uint64_t perft(uint32_t depth, bool root = true);
     void test_movegen();
     void test_transposition_table();
+    void test_draw();
 
 };
