@@ -90,9 +90,9 @@ int32_t chess_t::negamax(uint32_t depth, uint64_t max_nodes, bool root, int32_t 
 
         if (move_eval > best_eval) {
             best_eval = move_eval;
+            move_idx = i;
             if (root) {
                 best_move = move;
-                move_idx = i;
             }
         }
 
