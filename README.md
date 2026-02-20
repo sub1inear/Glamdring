@@ -6,7 +6,7 @@ Features:
 * Alpha-beta Pruning with Move Ordering
 * Piece-Square Tables-Based Evalutaion
 * PEXT bitboards (for portability, emulated on other architectures)
-* Transposition Table
+* Transposition Table with Zobrist Hashing
 * Polyglot Opening Books
     * Defaults uses `Titans.bin` from https://github.com/gmcheems-org/free-opening-books
 * Cross-Platform Support
