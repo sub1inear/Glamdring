@@ -21,7 +21,7 @@ cmake ..
 ```
 
 Usage:
-```bash
+```
 uci
 id name Glamdring
 id author sublinear
