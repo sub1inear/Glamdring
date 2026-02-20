@@ -1,5 +1,5 @@
 # Glamdring, Chess Engine
-Glamdring is UCI-compatible chess engine written in C++, written for learning. It can run on x86-64 and ARM (or any other).
+Glamdring is UCI-compatible chess engine written in C++, written for learning. It can run on x86-64 and ARM (or any other architecture).
 
 Features:
 * UCI (subset)
