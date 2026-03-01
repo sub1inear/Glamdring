@@ -8,7 +8,7 @@ Features:
 * PEXT bitboards (for portability, emulated on other architectures)
 * Transposition Table with Zobrist Hashing
 * Polyglot Opening Books
-    * Defaults uses `Titans.bin` from https://github.com/gmcheems-org/free-opening-books
+    * Defaults to using `Titans.bin` from https://github.com/gmcheems-org/free-opening-books
 * Cross-Platform Support
 
 
